@@ -1,0 +1,26 @@
+{
+  "device": {
+    "name": "LITE STAR Ryunix XR1",
+    "vendor_id": "0x11FF",
+    "product_id": "0x2364",
+    "directinput_product_guid": "{236411FF-0000-0000-0000-504944564944}",
+    "wine_instance_guid": "{9E573EDF-7734-11D2-8D4A-23903FB6BDF7}"
+  },
+  "buttons": {
+    "handbrake": 15,
+    "gear_1": 16,
+    "gear_2": 17,
+    "gear_3": 18,
+    "gear_4": 19,
+    "gear_5": 20,
+    "gear_6": 21,
+    "reverse": 22,
+    "range_splitter": 23
+  },
+  "axes": {
+    "steering": 0,
+    "throttle": 1,
+    "brake": 2,
+    "clutch": 5
+  }
+}

@@ -104,11 +104,21 @@ python3 "${BIN_DIR}/configure_wine.py" "${DETECTED_WINE}/bin/wine" "${DETECTED_B
 
 # 6. Configure Steam Input
 echo ""
-echo -e "${BOLD}[Step 3/3] Disabling Steam Input Overlay Hook...${NC}"
+echo -e "${BOLD}[Step 3/4] Disabling Steam Input Overlay Hook...${NC}"
 if [ -d "${STEAM_DIR}" ]; then
     python3 "${BIN_DIR}/configure_steam.py" "${STEAM_DIR}" 227300
 else
     echo -e "${YELLOW}[!] Steam directory not found. Skipping Steam Input bypass.${NC}"
+fi
+
+# 7. Configure ETS2 Profile
+echo ""
+echo -e "${BOLD}[Step 4/4] Calibrating ETS2 Profiles & Controls...${NC}"
+ETS2_DOCS="${HOME}/Documents/Euro Truck Simulator 2"
+if [ -d "${ETS2_DOCS}" ]; then
+    python3 "${BIN_DIR}/configure_ets2.py" "${ETS2_DOCS}"
+else
+    echo -e "${YELLOW}[!] ETS2 documents not found at ${ETS2_DOCS}. Skipping profile patch.${NC}"
 fi
 
 echo ""
