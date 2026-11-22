@@ -1,0 +1,1830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Sades Ryunix XR1 — Racing Wheel Studio</title>
+<style>
+  :root {
+    --bg: #090a0f;
+    --card: #12131c;
+    --card-hover: #181926;
+    --border: #232538;
+    --accent: #6c5ce7;
+    --accent-glow: rgba(108, 92, 231, 0.4);
+    --accent2: #00cec9;
+    --red: #ff4757;
+    --red-glow: rgba(255, 71, 87, 0.4);
+    --green: #2ed573;
+    --green-glow: rgba(46, 213, 115, 0.4);
+    --yellow: #ffa502;
+    --text: #f1f2f6;
+    --dim: #747d8c;
+    --wheel-leather: #1e1f29;
+    --wheel-spoke: #2a2b3d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: radial-gradient(circle at 50% 0%, #151628 0%, var(--bg) 80%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+    padding-bottom: 40px;
+    overflow-x: hidden;
+  }
+
+  header {
+    text-align: center;
+    padding: 24px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(18, 19, 28, 0.7);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  header h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #a29bfe, var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .status-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--red);
+    transition: background 0.3s;
+  }
+
+  .status-dot.connected {
+    background: var(--green);
+    box-shadow: 0 0 10px var(--green);
+    animation: pulse 1.8s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+  }
+
+  .main-container {
+    max-width: 1320px;
+    margin: 20px auto;
+    padding: 0 16px;
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 20px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--dim);
+    margin-bottom: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-title .tag {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(108, 92, 231, 0.15);
+    color: #a29bfe;
+  }
+
+  /* ══════════════════════════════════════════════
+     STEERING WHEEL VISUALIZER (RYUNIX XR1 AUTHENTIC)
+     ══════════════════════════════════════════════ */
+  .wheel-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    padding: 10px 0 20px;
+  }
+
+  .wheel-viewport {
+    width: 420px;
+    height: 420px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Paddle Shifters Behind Wheel */
+  .paddle {
+    position: absolute;
+    width: 46px;
+    height: 140px;
+    background: #181924;
+    border: 2px solid #363952;
+    border-radius: 14px;
+    top: calc(50% - 70px);
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--dim);
+    transition: all 0.08s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+  }
+
+  .paddle.left { left: 10px; border-radius: 20px 4px 4px 20px; }
+  .paddle.right { right: 10px; border-radius: 4px 20px 20px 4px; }
+
+  .paddle.active {
+    background: var(--accent2);
+    border-color: #55efc4;
+    color: #000;
+    box-shadow: 0 0 20px var(--accent2);
+    transform: scale(0.96) translateX(var(--shift, 0));
+  }
+  .paddle.left.active { --shift: 6px; }
+  .paddle.right.active { --shift: -6px; }
+
+  /* Rotating Wheel Container */
+  .wheel-rotor {
+    width: 360px;
+    height: 360px;
+    border-radius: 50%;
+    position: relative;
+    z-index: 2;
+    transform-origin: 50% 50%;
+    transition: transform 0.04s cubic-bezier(0.1, 1, 0.1, 1);
+  }
+
+  /* Outer Rim with Perforated Grip Texture */
+  .wheel-rim {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 30px solid #1a1a24;
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.9), 0 12px 30px rgba(0,0,0,0.7);
+    position: relative;
+    background: transparent;
+  }
+
+  /* Authentic XR1 Yellow 12-o'clock centering stripe */
+  .wheel-center-stripe {
+    position: absolute;
+    top: -30px;
+    left: calc(50% - 9px);
+    width: 18px;
+    height: 30px;
+    background: #f1c40f;
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(241, 196, 15, 0.6);
+  }
+
+  /* Split Lower Spoke */
+  .wheel-spoke-split {
+    position: absolute;
+    bottom: 12px;
+    left: calc(50% - 48px);
+    width: 96px;
+    height: 110px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .spoke-strut {
+    width: 26px;
+    height: 100%;
+    background: linear-gradient(180deg, #2c2d3c 0%, #15161f 100%);
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  }
+
+  /* Central Pod Housing (authentic XR1 hexagonal/trapezoid shape) */
+  .wheel-center-pod {
+    position: absolute;
+    top: 60px;
+    left: 45px;
+    right: 45px;
+    height: 190px;
+    background: linear-gradient(180deg, #252636 0%, #181924 100%);
+    border-radius: 24px;
+    border: 2px solid #36384d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: inset 0 2px 4px rgba(255,255,255,0.06), 0 10px 25px rgba(0,0,0,0.6);
+    z-index: 4;
+  }
+
+  /* Left & Right Spoke Wings */
+  .pod-wings {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 14px 16px 0;
+  }
+
+  /* Spoke Columns (Left and Right) */
+  .spoke-wing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* XR1 D-Pad */
+  .xr1-dpad {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    background: #15161f;
+    border-radius: 50%;
+    border: 2px solid #303348;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dpad-cross-h {
+    position: absolute;
+    width: 52px;
+    height: 18px;
+    background: #232536;
+    border-radius: 4px;
+  }
+  .dpad-cross-v {
+    position: absolute;
+    width: 18px;
+    height: 52px;
+    background: #232536;
+    border-radius: 4px;
+  }
+
+  .dpad-arrow {
+    position: absolute;
+    font-size: 10px;
+    color: #646b82;
+    font-weight: 900;
+    z-index: 2;
+    transition: all 0.08s ease;
+    user-select: none;
+  }
+  .dpad-arrow.up    { top: 2px; }
+  .dpad-arrow.down  { bottom: 2px; }
+  .dpad-arrow.left  { left: 4px; }
+  .dpad-arrow.right { right: 4px; }
+  .dpad-arrow.active {
+    color: #fff !important;
+    text-shadow: 0 0 8px #a29bfe;
+    transform: scale(1.3);
+  }
+
+  /* 3 Horizontal Buttons Under D-Pad & Action Buttons */
+  .trio-buttons {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+
+  .trio-btn {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #171824;
+    border: 1.5px solid #3c405c;
+    color: #cbd5e1;
+    font-size: 8px;
+    font-weight: 800;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 1px 2px rgba(255,255,255,0.08), 0 3px 6px rgba(0,0,0,0.5);
+    transition: all 0.08s ease;
+    user-select: none;
+  }
+
+  .trio-btn .btn-sub {
+    font-size: 6px;
+    color: var(--dim);
+    line-height: 1;
+    margin-top: 1px;
+  }
+
+  .trio-btn.active {
+    background: var(--accent) !important;
+    border-color: #a29bfe !important;
+    color: #fff !important;
+    box-shadow: 0 0 14px var(--accent-glow) !important;
+    transform: scale(1.18);
+  }
+
+  /* Right Spoke 4 Action Buttons Diamond */
+  .action-diamond {
+    position: relative;
+    width: 60px;
+    height: 60px;
+  }
+
+  .action-btn {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #171824;
+    border: 1.5px solid #3c405c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 900;
+    transition: all 0.08s ease;
+    user-select: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  }
+
+  .action-btn.top    { top: 0; left: 20px; color: #2ed573; border-color: #2ed573; }
+  .action-btn.left   { top: 20px; left: 0; color: #ff6b81; border-color: #ff6b81; }
+  .action-btn.right  { top: 20px; right: 0; color: #ff4757; border-color: #ff4757; }
+  .action-btn.bottom { bottom: 0; left: 20px; color: #1e90ff; border-color: #1e90ff; }
+
+  .action-btn.top.active    { background: #2ed573 !important; color: #000 !important; box-shadow: 0 0 15px var(--green-glow) !important; transform: scale(1.2); }
+  .action-btn.left.active   { background: #ff6b81 !important; color: #fff !important; box-shadow: 0 0 15px rgba(255, 107, 129, 0.6) !important; transform: scale(1.2); }
+  .action-btn.right.active  { background: #ff4757 !important; color: #fff !important; box-shadow: 0 0 15px var(--red-glow) !important; transform: scale(1.2); }
+  .action-btn.bottom.active { background: #1e90ff !important; color: #fff !important; box-shadow: 0 0 15px rgba(30, 144, 255, 0.6) !important; transform: scale(1.2); }
+
+  /* Center Phoenix Emblem Horn Hub */
+  .center-horn-hub {
+    position: absolute;
+    top: 24px;
+    left: calc(50% - 42px);
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #2d3045 0%, #10111a 100%);
+    border: 3px solid #3d415e;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.7), inset 0 2px 4px rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+  }
+
+  .phoenix-logo {
+    width: 44px;
+    height: 44px;
+    fill: #e8ecf4;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+  }
+
+  /* 4 Buttons at Center Bottom Lip */
+  .center-bottom-bar {
+    position: absolute;
+    bottom: 10px;
+    left: 14px;
+    right: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 8px;
+    background: rgba(14, 15, 22, 0.7);
+    border-radius: 12px;
+    height: 32px;
+    border: 1px solid #2d3045;
+  }
+
+  .center-btn {
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: #171824;
+    border: 1px solid #3c405c;
+    color: #94a3b8;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    transition: all 0.08s ease;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .center-btn.active {
+    background: var(--accent) !important;
+    border-color: #a29bfe !important;
+    color: #fff !important;
+    box-shadow: 0 0 12px var(--accent-glow) !important;
+    transform: scale(1.12);
+  }
+
+  .center-led-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ffa502;
+    box-shadow: 0 0 8px #ffa502;
+  }
+
+  .steering-angle-box {
+    margin-top: 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .steering-deg {
+    font-size: 42px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent2);
+  }
+
+  .steering-dir {
+    font-size: 14px;
+    color: var(--dim);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .steering-cal-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .cal-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: #1e202f;
+    border: 1px solid #3d425c;
+    color: #e0e6ed;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .cal-btn:hover {
+    background: var(--accent);
+    border-color: #a29bfe;
+    color: #fff;
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+
+  .cal-btn.sub {
+    background: transparent;
+    color: var(--dim);
+    border-color: #282a3d;
+  }
+  .cal-btn.sub:hover {
+    color: #fff;
+    border-color: #555;
+  }
+
+  .deadzone-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  /* ══════════════════════════════════════════════
+     PEDALS SECTION (THROTTLE / BRAKE / CLUTCH)
+     ══════════════════════════════════════════════ */
+  .pedals-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 10px;
+  }
+
+  .pedal-card {
+    background: #171824;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+
+  .pedal-card.active-focus {
+    border-color: rgba(255,255,255,0.3);
+  }
+
+  .pedal-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .pedal-name {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .pedal-pct {
+    font-size: 22px;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pedal-plate {
+    width: 64px;
+    height: 180px;
+    background: #0f1017;
+    border: 2px solid #282a3d;
+    border-radius: 14px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+    margin: 8px 0;
+  }
+
+  .pedal-gauge-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 0%;
+    border-radius: 10px;
+    transition: height 0.04s cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .pedal-gauge-fill.throttle {
+    background: linear-gradient(0deg, #10ac84, #1dd1a1);
+    box-shadow: 0 0 15px rgba(29, 209, 161, 0.5);
+  }
+
+  .pedal-gauge-fill.brake {
+    background: linear-gradient(0deg, #ee5253, #ff6b6b);
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.5);
+  }
+
+  .pedal-gauge-fill.clutch {
+    background: linear-gradient(0deg, #5f27cd, #341f97);
+    box-shadow: 0 0 15px rgba(95, 39, 205, 0.5);
+  }
+
+  /* Grip lines on pedal plate */
+  .pedal-plate::after {
+    content: '';
+    position: absolute;
+    top: 10%; bottom: 10%; left: 8px; right: 8px;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 8px,
+      rgba(255,255,255,0.08) 8px,
+      rgba(255,255,255,0.08) 12px
+    );
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .pedal-controls {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 11px;
+  }
+
+  .pedal-select-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--dim);
+  }
+
+  .pedal-select {
+    background: #0f1017;
+    border: 1px solid #363952;
+    color: #e0e6ed;
+    border-radius: 6px;
+    padding: 3px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    outline: none;
+  }
+
+  .invert-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    user-select: none;
+    color: var(--dim);
+  }
+  .invert-label input { accent-color: var(--accent); }
+
+  /* ══════════════════════════════════════════════
+     GEAR SHIFTER 6+1 H-PATTERN VISUALIZER
+     ══════════════════════════════════════════════ */
+  .shifter-module {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 20px;
+    align-items: center;
+    background: #171824;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .shifter-gate {
+    width: 130px;
+    height: 150px;
+    position: relative;
+    background: #0d0e14;
+    border-radius: 14px;
+    border: 2px solid #282a3d;
+    padding: 10px;
+  }
+
+  /* Gate channels (H pattern tracks) */
+  .gate-channel-h {
+    position: absolute;
+    top: calc(50% - 6px);
+    left: 18px;
+    right: 18px;
+    height: 12px;
+    background: #202230;
+    border-radius: 4px;
+  }
+
+  .gate-slot-pos {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #171924;
+    border: 1.5px solid #3d415e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: #747d8c;
+    transition: all 0.12s ease;
+    z-index: 2;
+  }
+
+  /* Slot coordinates */
+  .gate-slot-pos[data-g="1"] { top: 12px; left: 16px; }
+  .gate-slot-pos[data-g="3"] { top: 12px; left: calc(50% - 13px); }
+  .gate-slot-pos[data-g="5"] { top: 12px; right: 16px; }
+  .gate-slot-pos[data-g="2"] { bottom: 12px; left: 16px; }
+  .gate-slot-pos[data-g="4"] { bottom: 12px; left: calc(50% - 13px); }
+  .gate-slot-pos[data-g="6"] { bottom: 12px; right: 16px; }
+  .gate-slot-pos[data-g="R"] { bottom: 12px; right: -6px; display: none; } /* alternate */
+
+  .gate-slot-pos.engaged {
+    background: var(--green) !important;
+    border-color: #55efc4 !important;
+    color: #000 !important;
+    box-shadow: 0 0 16px var(--green-glow) !important;
+    transform: scale(1.2);
+  }
+
+  .gate-slot-pos.reverse-engaged {
+    background: var(--red) !important;
+    border-color: #ff7675 !important;
+    color: #fff !important;
+    box-shadow: 0 0 16px var(--red-glow) !important;
+    transform: scale(1.2);
+  }
+
+  .shifter-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .current-gear-display {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .gear-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: #0f1017;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--green);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    transition: all 0.15s ease;
+  }
+
+  .gear-circle.in-gear {
+    border-color: var(--green);
+    box-shadow: 0 0 20px var(--green-glow);
+  }
+
+  .gear-circle.in-rev {
+    color: var(--red);
+    border-color: var(--red);
+    box-shadow: 0 0 20px var(--red-glow);
+  }
+
+  .gear-aux-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .aux-btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: #1e202f;
+    border: 1px solid #363952;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.1s;
+  }
+
+  .aux-btn.active {
+    background: var(--yellow);
+    border-color: #ffeaa7;
+    color: #000;
+    box-shadow: 0 0 12px rgba(255, 165, 2, 0.4);
+  }
+
+  .aux-btn.handbrake-on {
+    background: var(--red) !important;
+    border-color: #ff7675 !important;
+    color: #fff !important;
+    box-shadow: 0 0 18px var(--red-glow), inset 0 0 8px rgba(255,255,255,0.4) !important;
+    transform: scale(1.06);
+    animation: pulse-hb 1.2s infinite;
+  }
+
+  .aux-btn.lohi-high {
+    background: #ffa502 !important;
+    border-color: #ffeaa7 !important;
+    color: #000 !important;
+    box-shadow: 0 0 18px rgba(255, 165, 2, 0.6), inset 0 0 8px rgba(255,255,255,0.4) !important;
+    transform: scale(1.06);
+  }
+
+  @keyframes pulse-hb {
+    0%, 100% { box-shadow: 0 0 14px var(--red-glow); }
+    50% { box-shadow: 0 0 24px rgba(255, 71, 87, 0.7); }
+  }
+
+  /* ══════════════════════════════════════════════
+     BUTTONS MATRIX WITH IDENTIFICATION TOOL
+     ══════════════════════════════════════════════ */
+  .buttons-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .btn-chip {
+    aspect-ratio: 1;
+    background: #171824;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    transition: all 0.08s;
+    user-select: none;
+  }
+
+  .btn-chip.pressed {
+    background: var(--accent);
+    border-color: #a29bfe;
+    color: #fff;
+    box-shadow: 0 0 16px var(--accent-glow);
+    transform: scale(1.08);
+  }
+
+  .btn-chip .b-id {
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .btn-chip .b-name {
+    font-size: 9px;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+  .btn-chip.pressed .b-name { color: #fff; }
+
+  /* ══════════════════════════════════════════════
+     RAW AXES REAL-TIME DIAGNOSTIC MONITOR
+     ══════════════════════════════════════════════ */
+  .axes-diagnostic {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .axis-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #171824;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    transition: border-color 0.15s;
+  }
+
+  .axis-card.active-movement {
+    border-color: var(--accent2);
+    box-shadow: 0 0 10px rgba(0, 206, 201, 0.2);
+  }
+
+  .axis-id {
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 60px;
+    color: var(--dim);
+  }
+
+  .axis-bar-wrap {
+    flex: 1;
+    height: 10px;
+    background: #0d0e14;
+    border-radius: 5px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .axis-cursor {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 6px;
+    margin-left: -3px;
+    background: var(--accent2);
+    border-radius: 3px;
+    box-shadow: 0 0 8px var(--accent2);
+    transition: left 0.03s;
+  }
+
+  .axis-num {
+    font-size: 12px;
+    font-family: monospace;
+    font-weight: 700;
+    min-width: 65px;
+    text-align: right;
+    color: var(--text);
+  }
+
+  /* Overlay */
+  #connect-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(9, 10, 15, 0.94);
+    backdrop-filter: blur(14px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 1000;
+    transition: opacity 0.4s ease;
+  }
+
+  #connect-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .overlay-icon { font-size: 60px; }
+  .overlay-btn {
+    padding: 12px 28px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 20px var(--accent-glow);
+  }
+
+  @media (max-width: 980px) {
+    .main-container { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div id="connect-overlay">
+  <div class="overlay-icon">🏎️</div>
+  <h2 style="font-size: 24px; font-weight: 800;">Sades Ryunix XR1 Studio</h2>
+  <p style="color: var(--dim); max-width: 420px; text-align: center; line-height: 1.5;">
+    To read the controller on macOS, please press any button on the wheel or pedal to activate the browser Gamepad API.
+  </p>
+  <button class="overlay-btn" onclick="wakeGamepad()">Press Wheel / Start Test</button>
+</div>
+
+<header>
+  <h1>🏎️ Sades Ryunix XR1 Studio <span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #2ed573; color: #000; font-weight: 800; vertical-align: middle;">v3.0 CALIBRATED</span></h1>
+  <div>
+    <div class="status-badge">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text" style="font-weight: 600;">Waiting for controller...</span>
+    </div>
+  </div>
+</header>
+
+<div class="main-container">
+
+  <!-- LEFT COLUMN: WHEEL & BUTTON VISUALIZER -->
+  <div style="display: flex; flex-direction: column; gap: 20px;">
+
+    <!-- STEERING WHEEL WITH BUTTONS -->
+    <div class="card">
+      <div class="card-title">
+        <span>🎡 Steering Wheel &amp; Wheel Controls</span>
+        <span class="tag">1080° FFB Wheel</span>
+      </div>
+
+      <div class="wheel-stage">
+        <div class="wheel-viewport">
+
+          <!-- Left Paddle Shifter (Downshift) -->
+          <div class="paddle left" id="paddle-left">
+            <span>◀</span>
+            <span style="margin-top: 4px;">L</span>
+            <span style="font-size: 9px; opacity: 0.6; margin-top: 4px;" id="lbl-paddle-left">B4</span>
+          </div>
+
+          <!-- Right Paddle Shifter (Upshift) -->
+          <div class="paddle right" id="paddle-right">
+            <span>▶</span>
+            <span style="margin-top: 4px;">R</span>
+            <span style="font-size: 9px; opacity: 0.6; margin-top: 4px;" id="lbl-paddle-right">B5</span>
+          </div>
+
+          <!-- Rotating Wheel -->
+          <div class="wheel-rotor" id="wheel-rotor">
+            <div class="wheel-rim">
+              <div class="wheel-center-stripe"></div>
+            </div>
+
+            <!-- Split Lower Spoke Struts -->
+            <div class="wheel-spoke-split">
+              <div class="spoke-strut"></div>
+              <div class="spoke-strut"></div>
+            </div>
+
+            <!-- Center Pod Housing -->
+            <div class="wheel-center-pod">
+
+              <!-- Left & Right Spoke Wings -->
+              <div class="pod-wings">
+
+                <!-- Left Spoke: D-Pad & 3 Buttons Below (L1/LB, L2/LT, L3) -->
+                <div class="spoke-wing">
+                  <div class="xr1-dpad">
+                    <div class="dpad-cross-h"></div>
+                    <div class="dpad-cross-v"></div>
+                    <div class="dpad-arrow up" id="dpad-up">▲</div>
+                    <div class="dpad-arrow down" id="dpad-down">▼</div>
+                    <div class="dpad-arrow left" id="dpad-left">◀</div>
+                    <div class="dpad-arrow right" id="dpad-right">▶</div>
+                  </div>
+                  <!-- 3 Buttons Left -->
+                  <div class="trio-buttons">
+                    <div class="trio-btn" id="btn-l1" title="L1 / LB (Button 4)">
+                      <span>L1</span><span class="btn-sub">LB</span>
+                    </div>
+                    <div class="trio-btn" id="btn-l2" title="L2 / LT (Button 6)">
+                      <span>L2</span><span class="btn-sub">LT</span>
+                    </div>
+                    <div class="trio-btn" id="btn-l3" title="L3 (Button 10)">
+                      <span>L3</span><span class="btn-sub">SL</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right Spoke: 4 Action Buttons & 3 Buttons Below (R3, R2/RT, R1/RB) -->
+                <div class="spoke-wing">
+                  <div class="action-diamond">
+                    <div class="action-btn top" id="btn-act-y" title="Y / △ (Button 3)">△</div>
+                    <div class="action-btn left" id="btn-act-x" title="X / □ (Button 2)">□</div>
+                    <div class="action-btn right" id="btn-act-b" title="B / ○ (Button 1)">○</div>
+                    <div class="action-btn bottom" id="btn-act-a" title="A / ✕ (Button 0)">✕</div>
+                  </div>
+                  <!-- 3 Buttons Right -->
+                  <div class="trio-buttons">
+                    <div class="trio-btn" id="btn-r3" title="R3 (Button 11)">
+                      <span>R3</span><span class="btn-sub">SR</span>
+                    </div>
+                    <div class="trio-btn" id="btn-r2" title="R2 / RT (Button 7)">
+                      <span>R2</span><span class="btn-sub">RT</span>
+                    </div>
+                    <div class="trio-btn" id="btn-r1" title="R1 / RB (Button 5)">
+                      <span>R1</span><span class="btn-sub">RB</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Center Phoenix Horn Hub -->
+              <div class="center-horn-hub">
+                <svg class="phoenix-logo" viewBox="0 0 100 100">
+                  <path d="M50 15 C45 28 32 35 22 48 C15 57 16 68 22 76 C28 84 40 88 50 88 C60 88 72 84 78 76 C84 68 85 57 78 48 C68 35 55 28 50 15 Z M50 30 C56 42 66 48 70 58 C74 66 70 74 64 78 C58 82 50 82 50 82 C50 82 42 82 36 78 C30 74 26 66 30 58 C34 48 44 42 50 30 Z M50 48 C48 54 44 58 40 62 C38 64 42 68 46 68 C48 68 50 66 50 64 C50 66 52 68 54 68 C58 68 62 64 60 62 C56 58 52 54 50 48 Z"/>
+                </svg>
+              </div>
+
+              <!-- 4 Buttons at Center Bottom Lip -->
+              <div class="center-bottom-bar">
+                <div class="center-btn" id="btn-c-share" title="Share (Button 8)">SHARE</div>
+                <div class="center-btn" id="btn-c-home" title="Home (Button 12)">🏠 HOME</div>
+                <div class="center-led-dot"></div>
+                <div class="center-btn" id="btn-c-mode" title="Mode (Button 13)">⏏ MODE</div>
+                <div class="center-btn" id="btn-c-options" title="Options (Button 9)">OPTIONS</div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        <div class="steering-angle-box">
+          <div class="steering-deg" id="wheel-deg">0.0°</div>
+          <div class="steering-dir" id="wheel-dir">CENTER</div>
+        </div>
+
+        <div class="steering-cal-bar">
+          <button class="cal-btn" onclick="zeroCenter()" title="Set current physical wheel angle as absolute 0.0° center">🎯 Set Center (Zero)</button>
+          <button class="cal-btn sub" onclick="resetCenter()" title="Clear center calibration">↺ Reset</button>
+          <div class="deadzone-ctrl">
+            <span>Deadzone:</span>
+            <select id="deadzone-sel" class="pedal-select" onchange="setDeadzone(this.value)">
+              <option value="0.0">0.0° (Raw)</option>
+              <option value="1.0">1.0°</option>
+              <option value="2.0" selected>2.0° (Filter 1.5°)</option>
+              <option value="3.0">3.0°</option>
+            </select>
+          </div>
+        </div>
+        <div id="center-toast" style="font-size: 11px; color: var(--accent2); margin-top: 6px; height: 14px;"></div>
+      </div>
+    </div>
+
+    <!-- PEDALS (THROTTLE, BRAKE, CLUTCH) -->
+    <div class="card">
+      <div class="card-title">
+        <span>🦶 3-Pedal Unit (Throttle • Brake • Clutch)</span>
+        <span class="tag">Analog Potentiometers</span>
+      </div>
+
+      <div class="pedals-grid">
+
+        <!-- CLUTCH -->
+        <div class="pedal-card" id="pedal-card-clutch">
+          <div class="pedal-header">
+            <span class="pedal-name" style="color: #a29bfe;">Clutch</span>
+            <span class="pedal-pct" id="clutch-val" style="color: #a29bfe;">0%</span>
+          </div>
+          <div class="pedal-plate">
+            <div class="pedal-gauge-fill clutch" id="clutch-bar"></div>
+          </div>
+          <div class="pedal-controls">
+            <div class="pedal-select-row">
+              <span>Input:</span>
+              <select class="pedal-select" id="clutch-axis-sel" onchange="saveConfig()">
+                <option value="6" selected>Axis 6 (Slider)</option>
+                <option value="5">Axis 5 (Rz)</option>
+                <option value="4">Axis 4 (Ry)</option>
+                <option value="3">Axis 3 (Rx)</option>
+                <option value="2">Axis 2 (Z)</option>
+                <option value="1">Axis 1 (Y)</option>
+              </select>
+            </div>
+            <label class="invert-label">
+              <input type="checkbox" id="clutch-inv" onchange="saveConfig()"> Invert Axis
+            </label>
+          </div>
+        </div>
+
+        <!-- BRAKE -->
+        <div class="pedal-card" id="pedal-card-brake">
+          <div class="pedal-header">
+            <span class="pedal-name" style="color: var(--red);">Brake</span>
+            <span class="pedal-pct" id="brake-val" style="color: var(--red);">0%</span>
+          </div>
+          <div class="pedal-plate">
+            <div class="pedal-gauge-fill brake" id="brake-bar"></div>
+          </div>
+          <div class="pedal-controls">
+            <div class="pedal-select-row">
+              <span>Input:</span>
+              <select class="pedal-select" id="brake-axis-sel" onchange="saveConfig()">
+                <option value="5" selected>Axis 5 (Rz)</option>
+                <option value="6">Axis 6 (Slider)</option>
+                <option value="4">Axis 4 (Ry)</option>
+                <option value="3">Axis 3 (Rx)</option>
+                <option value="2">Axis 2 (Z)</option>
+                <option value="1">Axis 1 (Y)</option>
+              </select>
+            </div>
+            <label class="invert-label">
+              <input type="checkbox" id="brake-inv" onchange="saveConfig()"> Invert Axis
+            </label>
+          </div>
+        </div>
+
+        <!-- THROTTLE -->
+        <div class="pedal-card" id="pedal-card-throttle">
+          <div class="pedal-header">
+            <span class="pedal-name" style="color: var(--green);">Throttle</span>
+            <span class="pedal-pct" id="throttle-val" style="color: var(--green);">0%</span>
+          </div>
+          <div class="pedal-plate">
+            <div class="pedal-gauge-fill throttle" id="throttle-bar"></div>
+          </div>
+          <div class="pedal-controls">
+            <div class="pedal-select-row">
+              <span>Input:</span>
+              <select class="pedal-select" id="throttle-axis-sel" onchange="saveConfig()">
+                <option value="2" selected>Axis 2 (Z)</option>
+                <option value="1">Axis 1 (Y)</option>
+                <option value="3">Axis 3 (Rx)</option>
+                <option value="4">Axis 4 (Ry)</option>
+                <option value="5">Axis 5 (Rz)</option>
+                <option value="6">Axis 6 (Slider)</option>
+              </select>
+            </div>
+            <label class="invert-label">
+              <input type="checkbox" id="throttle-inv" onchange="saveConfig()"> Invert Axis
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN: SHIFTER, RAW AXES & BUTTON MATRIX -->
+  <div style="display: flex; flex-direction: column; gap: 20px;">
+
+    <!-- 6+1 H-PATTERN GEAR SHIFTER -->
+    <div class="card">
+      <div class="card-title">
+        <span>⚙️ 6+1 H-Pattern Shifter</span>
+        <span class="tag">Manual Transmission</span>
+      </div>
+
+      <div class="shifter-module">
+        <!-- H Gate -->
+        <div class="shifter-gate">
+          <div class="gate-channel-h"></div>
+          <div class="gate-slot-pos" data-g="1">1</div>
+          <div class="gate-slot-pos" data-g="3">3</div>
+          <div class="gate-slot-pos" data-g="5">5</div>
+          <div class="gate-slot-pos" data-g="2">2</div>
+          <div class="gate-slot-pos" data-g="4">4</div>
+          <div class="gate-slot-pos" data-g="6">6</div>
+          <div class="gate-slot-pos" data-g="R" style="display: flex; right: -8px; border-color: #ff6b6b; color: #ff6b6b;">R</div>
+        </div>
+
+        <!-- Gear Info & Shifter Buttons -->
+        <div class="shifter-details">
+          <div class="current-gear-display">
+            <div class="gear-circle" id="gear-circle">N</div>
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: var(--dim); font-weight: 700;">Active Gear</div>
+              <div id="gear-name" style="font-size: 16px; font-weight: 800; color: #fff;">Neutral</div>
+            </div>
+          </div>
+
+          <div style="font-size: 11px; color: var(--dim); margin-top: 4px;">Auxiliary Controls:</div>
+          <div class="gear-aux-buttons">
+            <div class="aux-btn" id="shifter-lohi" style="font-weight: 800;">⚡ Range: LOW (B23)</div>
+            <div class="aux-btn" id="shifter-handbrake" style="font-weight: 800;">🅿 Handbrake (B15)</div>
+          </div>
+
+          <!-- Shifter Calibration dropdown -->
+          <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 11px; color: var(--dim);">Shifter Profile:</span>
+            <select class="pedal-select" id="shifter-preset" onchange="applyShifterPreset(this.value)">
+              <option value="base16" selected>Buttons 16–21 &amp; P:15 (XR1 Confirmed)</option>
+              <option value="auto">Auto-Detect on Shift</option>
+              <option value="base8">Buttons 8–14</option>
+              <option value="base12">Buttons 12–18</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALL 24 BUTTONS MATRIX -->
+    <div class="card">
+      <div class="card-title">
+        <span>🔘 All Physical Buttons (0–23)</span>
+        <span class="tag" id="last-pressed-tag">Press any button</span>
+      </div>
+      <div class="buttons-bar" id="buttons-bar"></div>
+    </div>
+
+    <!-- RAW AXES MONITOR (WITH LIVE HIGHLIGHT ON CHANGE) -->
+    <div class="card">
+      <div class="card-title">
+        <span>📊 Raw Axes Live Monitor</span>
+        <span class="tag">Diagnostic</span>
+      </div>
+      <div class="axes-diagnostic" id="axes-diagnostic"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// RYUNIX XR1 BUTTON MAPPINGS & CONFIGURATION
+// ══════════════════════════════════════════════════════
+let activeGamepad = null;
+let prevButtons = [];
+let prevAxes = [];
+let axisPrevValues = {};
+let lastMovedAxis = null;
+
+// User Preferences / Calibration
+let config = {
+  throttleAxis: 2, // Z axis
+  throttleInv: false,
+  brakeAxis: 5,    // Rz axis (confirmed by user!)
+  brakeInv: false,
+  clutchAxis: 6,   // Slider axis (confirmed by user!)
+  clutchInv: false,
+  shifterMode: 'exact',
+  gearMap: {
+    1: 16,
+    2: 17,
+    3: 18,
+    4: 19,
+    5: 20,
+    6: 21,
+    R: 22
+  },
+  parkingBtn: 15,
+  loHiBtn: 23
+};
+
+// Common button labels for XR1 with confirmed shifter mapping
+const BTN_LABELS = [
+  'A / ✕ (Blue)',
+  'B / ○ (Red)',
+  'X / □ (Pink)',
+  'Y / △ (Green)',
+  'L1 / LB (Paddle L)',
+  'R1 / RB (Paddle R)',
+  'L2 / LT',
+  'R2 / RT',
+  'SHARE',
+  'OPTIONS',
+  'L3',
+  'R3',
+  'HOME',
+  'MODE',
+  'AUX / B14',
+  '🅿 Handbrake (B15)',
+  'Gear 1 (B16)', 'Gear 2 (B17)', 'Gear 3 (B18)', 'Gear 4 (B19)',
+  'Gear 5 (B20)', 'Gear 6 (B21)', 'Gear R (B22)', 'Lo / Hi (B23)',
+  '▲ D-Pad Up (B24)',
+  '▼ D-Pad Down (B25)',
+  '◀ D-Pad Left (B26)',
+  '▶ D-Pad Right (B27)'
+];
+
+const AXIS_NAMES = [
+  'Axis 0 (Steering X)',
+  'Axis 1 (Y-Axis)',
+  'Axis 2 (Z-Axis / Throttle)',
+  'Axis 3 (Rx)',
+  'Axis 4 (Ry)',
+  'Axis 5 (Rz / Brake)',
+  'Axis 6 (Slider / Clutch)',
+  'Axis 7 (Aux)'
+];
+
+// Load saved config if any
+try {
+  const saved = localStorage.getItem('xr1_config_v2');
+  if (saved) Object.assign(config, JSON.parse(saved));
+} catch(e) {}
+
+function saveConfig() {
+  config.throttleAxis = parseInt(document.getElementById('throttle-axis-sel').value);
+  config.throttleInv = document.getElementById('throttle-inv').checked;
+  config.brakeAxis = parseInt(document.getElementById('brake-axis-sel').value);
+  config.brakeInv = document.getElementById('brake-inv').checked;
+  config.clutchAxis = parseInt(document.getElementById('clutch-axis-sel').value);
+  config.clutchInv = document.getElementById('clutch-inv').checked;
+  try { localStorage.setItem('xr1_config_v2', JSON.stringify(config)); } catch(e) {}
+}
+
+function syncConfigUI() {
+  document.getElementById('throttle-axis-sel').value = config.throttleAxis;
+  document.getElementById('throttle-inv').checked = config.throttleInv;
+  document.getElementById('brake-axis-sel').value = config.brakeAxis;
+  document.getElementById('brake-inv').checked = config.brakeInv;
+  document.getElementById('clutch-axis-sel').value = config.clutchAxis;
+  document.getElementById('clutch-inv').checked = config.clutchInv;
+  const dz = document.getElementById('deadzone-sel');
+  if (dz) dz.value = steerDeadzone.toFixed(1);
+}
+
+function applyShifterPreset(preset) {
+  config.shifterMode = preset;
+  let base = 8;
+  if (preset === 'base11') base = 11;
+  else if (preset === 'base12') base = 12;
+  else if (preset === 'base16') base = 16;
+
+  if (preset !== 'auto') {
+    config.gearMap = {
+      1: base, 2: base+1, 3: base+2, 4: base+3, 5: base+4, 6: base+5, R: base+6
+    };
+  }
+  saveConfig();
+}
+
+// ══════════════════════════════════════════════════════
+// INIT DOM ELEMENTS
+// ══════════════════════════════════════════════════════
+function initButtonsGrid(count) {
+  const container = document.getElementById('buttons-bar');
+  container.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const chip = document.createElement('div');
+    chip.className = 'btn-chip';
+    chip.id = `btn-chip-${i}`;
+    chip.innerHTML = `
+      <div class="b-id">${i}</div>
+      <div class="b-name">${BTN_LABELS[i] || 'B'+i}</div>
+    `;
+    container.appendChild(chip);
+  }
+}
+
+function initAxesList(count) {
+  const container = document.getElementById('axes-diagnostic');
+  container.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const row = document.createElement('div');
+    row.className = 'axis-card';
+    row.id = `axis-card-${i}`;
+    row.innerHTML = `
+      <div class="axis-id" id="axis-name-${i}">${AXIS_NAMES[i] || 'Axis ' + i}</div>
+      <div class="axis-bar-wrap">
+        <div class="axis-cursor" id="axis-cursor-${i}" style="left: 50%;"></div>
+      </div>
+      <div class="axis-num" id="axis-val-${i}">0.0000</div>
+    `;
+    container.appendChild(row);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// GAMEPAD CONNECTION HANDLERS
+// ══════════════════════════════════════════════════════
+function wakeGamepad() {
+  document.getElementById('connect-overlay').classList.add('hidden');
+}
+
+window.addEventListener('gamepadconnected', (e) => {
+  activeGamepad = e.gamepad;
+  document.getElementById('connect-overlay').classList.add('hidden');
+  document.getElementById('status-dot').classList.add('connected');
+  document.getElementById('status-text').textContent = e.gamepad.id;
+
+  initButtonsGrid(Math.max(24, e.gamepad.buttons.length));
+  initAxesList(Math.max(7, e.gamepad.axes.length));
+  syncConfigUI();
+
+  prevButtons = e.gamepad.buttons.map(b => b.pressed);
+  prevAxes = [...e.gamepad.axes];
+});
+
+window.addEventListener('gamepaddisconnected', (e) => {
+  activeGamepad = null;
+  document.getElementById('connect-overlay').classList.remove('hidden');
+  document.getElementById('status-dot').classList.remove('connected');
+  document.getElementById('status-text').textContent = 'Controller disconnected';
+});
+
+// Steering Center Calibration & Deadzone Settings
+let steerCenterOffset = parseFloat(localStorage.getItem('xr1_steer_center') || '0');
+let steerDeadzone = parseFloat(localStorage.getItem('xr1_steer_deadzone') || '2.0');
+
+function zeroCenter() {
+  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+  let gp = null;
+  for (let i = 0; i < gamepads.length; i++) {
+    if (gamepads[i]) { gp = gamepads[i]; break; }
+  }
+  if (gp && gp.axes.length > 0) {
+    steerCenterOffset = gp.axes[0];
+    localStorage.setItem('xr1_steer_center', steerCenterOffset);
+    const toast = document.getElementById('center-toast');
+    if (toast) {
+      toast.textContent = `✅ Center Calibrated! (Zero Offset: ${(steerCenterOffset * 540).toFixed(2)}°)`;
+      setTimeout(() => { toast.textContent = ''; }, 3500);
+    }
+  }
+}
+
+function resetCenter() {
+  steerCenterOffset = 0;
+  localStorage.removeItem('xr1_steer_center');
+  const toast = document.getElementById('center-toast');
+  if (toast) {
+    toast.textContent = `↺ Center reset to raw 0.0°`;
+    setTimeout(() => { toast.textContent = ''; }, 3000);
+  }
+}
+
+function setDeadzone(val) {
+  steerDeadzone = parseFloat(val);
+  localStorage.setItem('xr1_steer_deadzone', steerDeadzone);
+}
+
+// ══════════════════════════════════════════════════════
+// NORMALIZATION HELPER FOR PEDAL AXES
+// ══════════════════════════════════════════════════════
+// Most pedals rest at -1.0 or 0.0 or 1.0, and go to the opposite when pressed.
+function normalizePedal(rawVal, invert) {
+  if (rawVal === undefined || isNaN(rawVal)) return 0;
+
+  // In Web Gamepad API on macOS, axes are strictly -1.0 to 1.0.
+  // Full release is usually -1.0, full press is +1.0 (range of 2.0).
+  // Some wheels rest at 0.0 and go to 1.0 (or -1.0).
+  let norm = (rawVal + 1.0) / 2.0; // maps -1..1 to 0..1
+
+  if (invert) {
+    norm = 1.0 - norm;
+  }
+
+  let pct = Math.round(norm * 100);
+  return Math.max(0, Math.min(100, pct));
+}
+
+// ══════════════════════════════════════════════════════
+// MAIN ANIMATION LOOP
+// ══════════════════════════════════════════════════════
+function updateLoop() {
+  requestAnimationFrame(updateLoop);
+
+  // Poll gamepad
+  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+  let gp = null;
+  for (let i = 0; i < gamepads.length; i++) {
+    if (gamepads[i]) { gp = gamepads[i]; break; }
+  }
+
+  if (!gp) return;
+  if (!activeGamepad) {
+    window.dispatchEvent(new GamepadEvent('gamepadconnected', { gamepad: gp }));
+  }
+
+  const axes = gp.axes;
+  const buttons = gp.buttons;
+
+  // ── 1. STEERING WHEEL ROTATION ──
+  if (axes.length > 0) {
+    const rawSteer = axes[0]; // -1.0 (full left) to +1.0 (full right)
+
+    // Apply zero-center calibration offset
+    let corrected = rawSteer - steerCenterOffset;
+    corrected = Math.max(-1.0, Math.min(1.0, corrected));
+
+    let steerDeg = corrected * 540; // 1080 deg total rotation (±540°)
+
+    // Deadzone filter: if within deadzone, snap smoothly to 0.0° CENTER
+    const isWithinDeadzone = Math.abs(steerDeg) <= steerDeadzone;
+    if (isWithinDeadzone) {
+      steerDeg = 0;
+    }
+
+    const rotor = document.getElementById('wheel-rotor');
+    rotor.style.transform = `rotate(${steerDeg}deg)`;
+
+    const degEl = document.getElementById('wheel-deg');
+    const dirEl = document.getElementById('wheel-dir');
+    const absDeg = Math.abs(steerDeg).toFixed(1);
+
+    if (isWithinDeadzone || Math.abs(steerDeg) < 0.2) {
+      degEl.textContent = '0.0°';
+      dirEl.textContent = 'CENTER';
+      dirEl.style.color = 'var(--dim)';
+    } else if (steerDeg < 0) {
+      degEl.textContent = `-${absDeg}°`;
+      dirEl.textContent = '◀ LEFT';
+      dirEl.style.color = 'var(--accent2)';
+    } else {
+      degEl.textContent = `+${absDeg}°`;
+      dirEl.textContent = 'RIGHT ▶';
+      dirEl.style.color = 'var(--accent)';
+    }
+  }
+
+  // ── 2. PEDALS UPDATE (THROTTLE, BRAKE, CLUTCH) ──
+  // Clutch
+  const clutchRaw = axes[config.clutchAxis];
+  const clutchPct = normalizePedal(clutchRaw, config.clutchInv);
+  document.getElementById('clutch-bar').style.height = `${clutchPct}%`;
+  document.getElementById('clutch-val').textContent = `${clutchPct}%`;
+
+  // Brake
+  const brakeRaw = axes[config.brakeAxis];
+  const brakePct = normalizePedal(brakeRaw, config.brakeInv);
+  document.getElementById('brake-bar').style.height = `${brakePct}%`;
+  document.getElementById('brake-val').textContent = `${brakePct}%`;
+
+  // Throttle
+  const throttleRaw = axes[config.throttleAxis];
+  const throttlePct = normalizePedal(throttleRaw, config.throttleInv);
+  document.getElementById('throttle-bar').style.height = `${throttlePct}%`;
+  document.getElementById('throttle-val').textContent = `${throttlePct}%`;
+
+  // ── 3. BUTTONS MATRIX & ON-WHEEL BUTTON HIGHLIGHTS ──
+  let lastPressedIndex = null;
+
+  for (let i = 0; i < buttons.length; i++) {
+    const isPressed = buttons[i].pressed || buttons[i].value > 0.5;
+    const chip = document.getElementById(`btn-chip-${i}`);
+    if (chip) {
+      if (isPressed) {
+        chip.classList.add('pressed');
+        lastPressedIndex = i;
+      } else {
+        chip.classList.remove('pressed');
+      }
+    }
+  }
+
+  if (lastPressedIndex !== null) {
+    document.getElementById('last-pressed-tag').textContent = `Pressed: Button ${lastPressedIndex} (${BTN_LABELS[lastPressedIndex] || 'B'+lastPressedIndex})`;
+  } else {
+    document.getElementById('last-pressed-tag').textContent = 'No buttons pressed';
+  }
+
+  const isB = (idx) => Boolean(buttons[idx]?.pressed || (buttons[idx]?.value && buttons[idx].value > 0.5));
+
+  // Map to Authentic Ryunix XR1 Steering Wheel Controls:
+  // 1. Right Spoke 4 Action Buttons Diamond (0: A, 1: B, 2: X, 3: Y)
+  setBtnClass('btn-act-a', isB(0));
+  setBtnClass('btn-act-b', isB(1));
+  setBtnClass('btn-act-x', isB(2));
+  setBtnClass('btn-act-y', isB(3));
+
+  // 2. Left Spoke 3 Buttons Row (L1/LB, L2/LT, L3)
+  setBtnClass('btn-l1', isB(4));
+  setBtnClass('btn-l2', isB(6));
+  setBtnClass('btn-l3', isB(10));
+
+  // 3. Right Spoke 3 Buttons Row (R3, R2/RT, R1/RB)
+  setBtnClass('btn-r3', isB(11));
+  setBtnClass('btn-r2', isB(7));
+  setBtnClass('btn-r1', isB(5));
+
+  // 4. Center Pod 4 Buttons Bar (SHARE, HOME, MODE, OPTIONS)
+  setBtnClass('btn-c-share', isB(8));
+  setBtnClass('btn-c-home', isB(12));
+  setBtnClass('btn-c-mode', isB(13));
+  setBtnClass('btn-c-options', isB(9));
+
+  // 5. Paddle Shifters behind the wheel
+  const paddleL = isB(4);
+  const paddleR = isB(5);
+  const padLEl = document.getElementById('paddle-left');
+  const padREl = document.getElementById('paddle-right');
+  if (paddleL) padLEl.classList.add('active'); else padLEl.classList.remove('active');
+  if (paddleR) padREl.classList.add('active'); else padREl.classList.remove('active');
+
+  // 6. Left Spoke D-Pad Arrows (Strictly digital Hat Switch - NEVER analog pedal axes!)
+  let dUp = false;
+  let dDown = false;
+  let dLeft = false;
+  let dRight = false;
+
+  // In macOS Chromium, the HID Hat Switch directions are appended as buttons 24-27
+  if (buttons.length >= 28) {
+    dUp = Boolean(buttons[24]?.pressed || (buttons[24]?.value && buttons[24].value > 0.5));
+    dDown = Boolean(buttons[25]?.pressed || (buttons[25]?.value && buttons[25].value > 0.5));
+    dLeft = Boolean(buttons[26]?.pressed || (buttons[26]?.value && buttons[26].value > 0.5));
+    dRight = Boolean(buttons[27]?.pressed || (buttons[27]?.value && buttons[27].value > 0.5));
+  }
+
+  setBtnClass('dpad-up', dUp);
+  setBtnClass('dpad-down', dDown);
+  setBtnClass('dpad-left', dLeft);
+  setBtnClass('dpad-right', dRight);
+
+  // ── 4. GEAR SHIFTER & PARKING BRAKE DETECTION ──
+  // Parking / Handbrake (Strictly Button 15 - user confirmed)
+  const isParked = Boolean(buttons[15]?.pressed || (buttons[15]?.value && buttons[15].value > 0.5));
+  const hbEl = document.getElementById('shifter-handbrake');
+  if (isParked) {
+    hbEl.classList.add('handbrake-on');
+    hbEl.innerHTML = '🅿 Handbrake ENGAGED';
+  } else {
+    hbEl.classList.remove('handbrake-on');
+    hbEl.innerHTML = '🅿 Handbrake (B15)';
+  }
+
+  // Truck Lo-Hi range switch (Strictly Button 23 - user confirmed)
+  const isLoHi = Boolean(buttons[23]?.pressed || (buttons[23]?.value && buttons[23].value > 0.5));
+  const loHiEl = document.getElementById('shifter-lohi');
+  if (isLoHi) {
+    loHiEl.classList.add('lohi-high');
+    loHiEl.innerHTML = '⚡ Range: HIGH (B23)';
+  } else {
+    loHiEl.classList.remove('lohi-high');
+    loHiEl.innerHTML = '⚡ Range: LOW (B23)';
+  }
+
+  let activeGear = 'N';
+
+  // Check gear button slots
+  const allSlots = document.querySelectorAll('.gate-slot-pos');
+  allSlots.forEach(s => {
+    s.classList.remove('engaged');
+    s.classList.remove('reverse-engaged');
+  });
+
+  // Check confirmed gearMap: 1:16, 2:17, 3:18, 4:19, 5:20, 6:21, R:22
+  for (const [gear, btnIdx] of Object.entries(config.gearMap)) {
+    if (buttons[btnIdx]?.pressed || (buttons[btnIdx]?.value && buttons[btnIdx].value > 0.5)) {
+      activeGear = gear;
+      break;
+    }
+  }
+
+  // If Reverse is engaged via Button 22
+  if (buttons[22]?.pressed || (buttons[22]?.value && buttons[22].value > 0.5)) {
+    activeGear = 'R';
+  }
+
+  // Update Shifter UI
+  const gearCircle = document.getElementById('gear-circle');
+  const gearName = document.getElementById('gear-name');
+
+  if (activeGear === 'N') {
+    if (isParked) {
+      gearCircle.className = 'gear-circle in-rev';
+      gearCircle.textContent = 'P';
+      gearName.textContent = 'Parked (Handbrake ON)';
+      gearName.style.color = '#ff6b81';
+    } else {
+      gearCircle.className = 'gear-circle';
+      gearCircle.textContent = 'N';
+      gearName.textContent = 'Neutral';
+      gearName.style.color = '#fff';
+    }
+  } else if (activeGear === 'R') {
+    gearCircle.className = 'gear-circle in-rev';
+    gearCircle.textContent = 'R';
+    gearName.textContent = isParked ? 'Reverse (Handbrake ON!)' : 'Reverse (R)';
+    gearName.style.color = isParked ? '#ff6b81' : '#fff';
+    const rSlot = document.querySelector(`.gate-slot-pos[data-g="R"]`);
+    if (rSlot) rSlot.classList.add('reverse-engaged');
+  } else {
+    gearCircle.className = 'gear-circle in-gear';
+    const num = parseInt(activeGear);
+    const effGear = (isLoHi && !isNaN(num)) ? (num + 6) : num;
+    gearCircle.textContent = isLoHi ? String(effGear) : activeGear;
+    const rangeTag = isLoHi ? ` [HI Range: Gear ${effGear}]` : '';
+    gearName.textContent = isParked ? `Gear ${activeGear}${rangeTag} (Handbrake ON!)` : `Gear ${activeGear}${rangeTag}`;
+    gearName.style.color = isParked ? '#ff6b81' : (isLoHi ? '#ffa502' : '#fff');
+    const slot = document.querySelector(`.gate-slot-pos[data-g="${activeGear}"]`);
+    if (slot) slot.classList.add('engaged');
+  }
+
+  // ── 5. RAW AXES DIAGNOSTIC MONITOR ──
+  for (let i = 0; i < axes.length; i++) {
+    const val = axes[i];
+    const cursor = document.getElementById(`axis-cursor-${i}`);
+    const valText = document.getElementById(`axis-val-${i}`);
+    const card = document.getElementById(`axis-card-${i}`);
+
+    if (cursor && valText) {
+      // Map -1..1 to 0..100%
+      const pct = ((val + 1) / 2) * 100;
+      cursor.style.left = `${pct}%`;
+      valText.textContent = val.toFixed(4);
+
+      // Highlight card if axis changed noticeably
+      const prev = axisPrevValues[i] || 0;
+      if (Math.abs(val - prev) > 0.05) {
+        card.classList.add('active-movement');
+        // Auto-label axis if it's the clutch or brake
+        if (i === config.clutchAxis) document.getElementById(`axis-name-${i}`).textContent = `Axis ${i} (Clutch)`;
+        else if (i === config.brakeAxis) document.getElementById(`axis-name-${i}`).textContent = `Axis ${i} (Brake)`;
+        else if (i === config.throttleAxis) document.getElementById(`axis-name-${i}`).textContent = `Axis ${i} (Throttle)`;
+      } else {
+        card.classList.remove('active-movement');
+      }
+      axisPrevValues[i] = val;
+    }
+  }
+}
+
+function setBtnClass(id, active) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (active) el.classList.add('active');
+  else el.classList.remove('active');
+}
+
+// Start update loop
+requestAnimationFrame(updateLoop);
+
+// Auto-check existing gamepads
+setTimeout(() => {
+  const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+  for (const gp of gps) {
+    if (gp) {
+      window.dispatchEvent(new GamepadEvent('gamepadconnected', { gamepad: gp }));
+      break;
+    }
+  }
+}, 400);
+</script>
+</body>
+</html>
