@@ -1915,6 +1915,63 @@
        TAB VIEW 2: FORCE FEEDBACK (FFB) STUDIO
        ══════════════════════════════════════════════ -->
   <div id="view-ffb" class="tab-view">
+
+    <!-- ETS2 LIVE TELEMETRY & FFB BRIDGE HUD -->
+    <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(20,22,34,0.92), rgba(13,14,20,0.98)); border: 1px solid rgba(46, 213, 115, 0.35); box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>📡 ETS2 Telemetry Physics Bridge</span>
+          <span class="tag" style="background: rgba(30,144,255,0.15); color: #70a1ff;">macOS Real-Time FFB</span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <span class="tag" id="telemetry-badge-status" style="background: rgba(255, 165, 2, 0.15); color: #ffa502;">Bridge: Standby</span>
+          <button class="overlay-btn" id="btn-telemetry-toggle" style="padding: 7px 16px; font-size: 11px; border-radius: 8px; font-weight: 700;" onclick="toggleTelemetryBridge()">
+            ⚡ Start Telemetry Bridge
+          </button>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 14px;">
+        <!-- Metric 1: Speed -->
+        <div style="background: #11121a; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid var(--border);">
+          <div style="font-size: 10px; text-transform: uppercase; color: var(--dim); font-weight: 700; letter-spacing: 0.5px;">Truck Speed</div>
+          <div id="hud-val-speed" style="font-size: 20px; font-weight: 900; color: #2ed573; margin-top: 4px;">0 <span style="font-size: 11px; color: var(--dim);">km/h</span></div>
+        </div>
+        <!-- Metric 2: Engine RPM -->
+        <div style="background: #11121a; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid var(--border);">
+          <div style="font-size: 10px; text-transform: uppercase; color: var(--dim); font-weight: 700; letter-spacing: 0.5px;">Diesel RPM</div>
+          <div id="hud-val-rpm" style="font-size: 20px; font-weight: 900; color: #1e90ff; margin-top: 4px;">650 <span style="font-size: 11px; color: var(--dim);">RPM</span></div>
+        </div>
+        <!-- Metric 3: Active Gear -->
+        <div style="background: #11121a; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid var(--border);">
+          <div style="font-size: 10px; text-transform: uppercase; color: var(--dim); font-weight: 700; letter-spacing: 0.5px;">Active Gear</div>
+          <div id="hud-val-gear" style="font-size: 20px; font-weight: 900; color: #ffa502; margin-top: 4px;">N</div>
+        </div>
+        <!-- Metric 4: Aligning Torque -->
+        <div style="background: #11121a; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid var(--border);">
+          <div style="font-size: 10px; text-transform: uppercase; color: var(--dim); font-weight: 700; letter-spacing: 0.5px;">Aligning Torque</div>
+          <div id="hud-val-torque" style="font-size: 20px; font-weight: 900; color: #ff4757; margin-top: 4px;">0.0%</div>
+        </div>
+        <!-- Metric 5: Source Mode -->
+        <div style="background: #11121a; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid var(--border);">
+          <div style="font-size: 10px; text-transform: uppercase; color: var(--dim); font-weight: 700; letter-spacing: 0.5px;">Physics Source</div>
+          <div id="hud-val-source" style="font-size: 11px; font-weight: 800; color: #70a1ff; margin-top: 6px; word-break: break-word;">Standby</div>
+        </div>
+      </div>
+
+      <!-- Real-time Motor Force Bar -->
+      <div style="margin-top: 14px; background: #0c0d12; border-radius: 10px; padding: 10px 14px; border: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; color: var(--dim); font-weight: 700;">
+          <span>◀ Left Force</span>
+          <span id="hud-torque-meter-label" style="color: #fff;">Wheel Torque: Center (0)</span>
+          <span>Right Force ▶</span>
+        </div>
+        <div style="height: 10px; background: #1a1c26; border-radius: 5px; position: relative; overflow: hidden; border: 1px solid #282a3d;">
+          <div id="hud-torque-bar" style="position: absolute; top: 0; bottom: 0; left: 50%; width: 0%; background: linear-gradient(90deg, #1e90ff, #2ed573); transition: width 0.05s ease, left 0.05s ease;"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="diag-grid">
       
       <!-- LEFT: FFB PARAMETERS SLIDERS -->
@@ -2558,6 +2615,156 @@ function calculateEasyFromAdvanced() {
   currentEasySettings.vibration = Math.round(V);
 
   applyEasyToUI();
+}
+
+// ══════════════════════════════════════════════════════
+// ETS2 TELEMETRY PHYSICS BRIDGE CONTROLS & HUD
+// ══════════════════════════════════════════════════════
+let telemetryRunning = false;
+let telemetryPollInterval = null;
+
+async function toggleTelemetryBridge() {
+  try {
+    const res = await fetch('/api/telemetry/toggle', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      telemetryRunning = data.running;
+      updateTelemetryUI(data.state, data.running);
+      if (telemetryRunning) {
+        showToast('🟢 ETS2 Physics Telemetry Bridge STARTED! Listening on UDP :23640');
+        if (!hidDevice || !hidDevice.opened) {
+          connectWebHID();
+        } else {
+          armHardwareActuators();
+        }
+        startTelemetryPolling();
+      } else {
+        showToast('⚪ ETS2 Telemetry Bridge STOPPED.');
+        stopTelemetryPolling();
+        sendConstantForce(0);
+      }
+    }
+  } catch(e) {
+    showToast(`❌ Error toggling bridge: ${e.message}`, 'error');
+  }
+}
+
+function startTelemetryPolling() {
+  if (telemetryPollInterval) clearInterval(telemetryPollInterval);
+  telemetryPollInterval = setInterval(async () => {
+    try {
+      // Send current wheel angle if available
+      let steerAngle = 0;
+      if (activeGamepad && activeGamepad.axes && activeGamepad.axes.length > 0) {
+        steerAngle = (activeGamepad.axes[0] - steerCenterOffset) * 540;
+      }
+      
+      const res = await fetch('/api/telemetry/status');
+      const data = await res.json();
+      if (data.success && data.state) {
+        updateTelemetryUI(data.state, data.running);
+
+        // If WebHID is armed and bridge is running, output physical torque to wheel!
+        if (data.running && hidDevice && hidDevice.opened && !hidRumbleInterval) {
+          const hwForce = data.state.hw_force || 0;
+          sendConstantForce(hwForce);
+        }
+      }
+    } catch(e) {}
+  }, 50); // 20Hz UI update and torque sync
+}
+
+function stopTelemetryPolling() {
+  if (telemetryPollInterval) {
+    clearInterval(telemetryPollInterval);
+    telemetryPollInterval = null;
+  }
+}
+
+function updateTelemetryUI(state, running) {
+  const badge = document.getElementById('telemetry-badge-status');
+  const btn = document.getElementById('btn-telemetry-toggle');
+  const spdEl = document.getElementById('hud-val-speed');
+  const rpmEl = document.getElementById('hud-val-rpm');
+  const gearEl = document.getElementById('hud-val-gear');
+  const torqEl = document.getElementById('hud-val-torque');
+  const srcEl = document.getElementById('hud-val-source');
+  const bar = document.getElementById('hud-torque-bar');
+  const lbl = document.getElementById('hud-torque-meter-label');
+
+  if (running) {
+    if (btn) {
+      btn.innerHTML = '🛑 Stop Telemetry Bridge';
+      btn.style.background = '#ff4757';
+    }
+    if (badge) {
+      if (state.connected) {
+        badge.textContent = '🟢 ETS2 Connected (100Hz)';
+        badge.style.background = 'rgba(46, 213, 115, 0.2)';
+        badge.style.color = '#2ed573';
+      } else {
+        badge.textContent = '⚡ Kinematic Mode Active';
+        badge.style.background = 'rgba(30, 144, 255, 0.2)';
+        badge.style.color = '#70a1ff';
+      }
+    }
+  } else {
+    if (btn) {
+      btn.innerHTML = '⚡ Start Telemetry Bridge';
+      btn.style.background = '';
+    }
+    if (badge) {
+      badge.textContent = 'Bridge: Standby';
+      badge.style.background = 'rgba(255, 165, 2, 0.15)';
+      badge.style.color = '#ffa502';
+    }
+  }
+
+  if (spdEl) spdEl.innerHTML = `${Math.round(state.speed_kmh || 0)} <span style="font-size: 11px; color: var(--dim);">km/h</span>`;
+  if (rpmEl) rpmEl.innerHTML = `${Math.round(state.rpm || 0)} <span style="font-size: 11px; color: var(--dim);">RPM</span>`;
+  
+  if (gearEl) {
+    let g = state.gear;
+    let gText = 'N';
+    if (g > 0) gText = String(g);
+    else if (g < 0) gText = 'R' + (g === -1 ? '' : Math.abs(g));
+    gearEl.textContent = gText;
+  }
+
+  if (torqEl) {
+    const pct = Math.round((state.ffb_torque || 0) * 100);
+    torqEl.textContent = `${pct > 0 ? '+' : ''}${pct}%`;
+    torqEl.style.color = pct < 0 ? '#1e90ff' : (pct > 0 ? '#2ed573' : '#fff');
+  }
+
+  if (srcEl) {
+    srcEl.textContent = state.source || 'Standby';
+    srcEl.style.color = state.connected ? '#2ed573' : '#70a1ff';
+  }
+
+  // Torque bar visualization
+  if (bar) {
+    const t = state.ffb_torque || 0; // -1 to +1
+    if (t < 0) {
+      // Left pull: bar extends left from 50%
+      const w = Math.min(50, Math.abs(t) * 50);
+      bar.style.left = `${50 - w}%`;
+      bar.style.width = `${w}%`;
+      bar.style.background = 'linear-gradient(90deg, #1e90ff, #70a1ff)';
+      if (lbl) lbl.textContent = `Wheel Torque: ◀ Left Force (${Math.round(Math.abs(t)*100)}%)`;
+    } else if (t > 0) {
+      // Right pull: bar extends right from 50%
+      const w = Math.min(50, t * 50);
+      bar.style.left = '50%';
+      bar.style.width = `${w}%`;
+      bar.style.background = 'linear-gradient(90deg, #2ed573, #7bed9f)';
+      if (lbl) lbl.textContent = `Wheel Torque: Right Force ▶ (${Math.round(t*100)}%)`;
+    } else {
+      bar.style.left = '50%';
+      bar.style.width = '0%';
+      if (lbl) lbl.textContent = 'Wheel Torque: Center (0)';
+    }
+  }
 }
 
 let liveWheelFeelActive = false;
