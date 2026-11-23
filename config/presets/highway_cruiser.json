@@ -8,10 +8,10 @@
   "description": "Smooth power-assisted steering, soft centering, and minimal rack friction for relaxed, effortless long-distance hauls.",
   "tags": ["ETS2", "Cruiser", "Comfort", "Smooth", "H-Shifter"],
   "easy_settings": {
-    "strength": 45,
-    "centering": 30,
-    "weight": 20,
-    "vibration": 40
+    "strength": 40,
+    "centering": 25,
+    "weight": 15,
+    "vibration": 35
   },
   "ffb": {
     "c_ff_enabled": 1.0,
