@@ -1937,27 +1937,37 @@
             <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent2); font-weight: 800; margin-bottom: 10px;">
               Quick Driving Profiles
             </div>
-            <div class="easy-presets-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
-              <div class="easy-card active" id="card-preset-heavy" onclick="selectEasyPreset('heavy')">
+            <div class="easy-presets-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 16px;">
+              <div class="easy-card active" id="card-preset-cruiser" onclick="selectEasyPreset('cruiser')">
+                <div style="font-size: 22px; margin-bottom: 4px;">🛋️</div>
+                <div class="easy-card-title">Smooth Cruiser</div>
+                <div class="easy-card-desc">Gentle steering, low friction, and 85% power steering assist for relaxed long-distance hauls.</div>
+              </div>
+              <div class="easy-card" id="card-preset-featherlight" onclick="selectEasyPreset('featherlight')">
+                <div style="font-size: 22px; margin-bottom: 4px;">🕊️</div>
+                <div class="easy-card-title">Featherlight EPS</div>
+                <div class="easy-card-desc">Ultra-light one-finger turning with near-zero resistance and 95% electric power assist.</div>
+              </div>
+              <div class="easy-card" id="card-preset-heavy" onclick="selectEasyPreset('heavy')">
                 <div style="font-size: 22px; margin-bottom: 4px;">🚛</div>
-                <div class="easy-card-title">Heavy Truck (ETS2)</div>
-                <div class="easy-card-desc">Authentic heavy steering, high rack damping, and deep diesel engine rumble.</div>
+                <div class="easy-card-title">Heavy Haul Truck</div>
+                <div class="easy-card-desc">Authentic heavy steering weight, realistic rack resistance, and deep diesel rumble.</div>
               </div>
               <div class="easy-card" id="card-preset-racing" onclick="selectEasyPreset('racing')">
                 <div style="font-size: 22px; margin-bottom: 4px;">🏎️</div>
                 <div class="easy-card-title">Track &amp; GT Racing</div>
-                <div class="easy-card-desc">Stiff centering return force, rapid slip reaction, and maximum curb texture.</div>
+                <div class="easy-card-desc">Direct centering return force, rapid slip reaction, and maximum road texture.</div>
               </div>
               <div class="easy-card" id="card-preset-drift" onclick="selectEasyPreset('drift')">
                 <div style="font-size: 22px; margin-bottom: 4px;">💨</div>
                 <div class="easy-card-title">Drift &amp; Agile</div>
-                <div class="easy-card-desc">Featherlight wheel, instant counter-steering return, zero mechanical drag.</div>
+                <div class="easy-card-desc">Featherlight wheel with fast counter-steering return and zero mechanical drag.</div>
               </div>
-              <div class="easy-card" id="card-preset-cruiser" onclick="selectEasyPreset('cruiser')">
-                <div style="font-size: 22px; margin-bottom: 4px;">🛋️</div>
-                <div class="easy-card-title">Smooth Cruiser</div>
-                <div class="easy-card-desc">Comfortable long-haul driving with 80% power steering assist and gentle feedback.</div>
-              </div>
+            </div>
+
+            <!-- Heavy Steering Fix Banner -->
+            <div style="background: rgba(46, 213, 115, 0.08); border: 1px solid rgba(46, 213, 115, 0.25); border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; font-size: 11px; color: #e0e6ed; line-height: 1.5;">
+              💡 <strong>Wheel feels heavy or stiff to turn?</strong> Select <strong>Smooth Cruiser</strong> or <strong>Featherlight EPS</strong>, then click <strong>Sync to ETS2 & Wheel</strong> below. This removes internal rack friction and enables maximum power steering assist.
             </div>
 
             <!-- Master Wheel Feel Controls -->
@@ -2375,37 +2385,43 @@ let currentFFB = {
 let currentFFBMode = 'easy';
 
 const EASY_PRESETS = {
+  cruiser: {
+    strength: 45,
+    centering: 30,
+    weight: 20,
+    vibration: 40,
+  },
+  featherlight: {
+    strength: 35,
+    centering: 20,
+    weight: 10,
+    vibration: 30,
+  },
   heavy: {
-    strength: 75,
-    centering: 65,
-    weight: 80,
+    strength: 65,
+    centering: 55,
+    weight: 60,
     vibration: 50,
   },
   racing: {
-    strength: 85,
-    centering: 90,
-    weight: 50,
-    vibration: 70,
+    strength: 75,
+    centering: 70,
+    weight: 45,
+    vibration: 65,
   },
   drift: {
-    strength: 65,
-    centering: 95,
-    weight: 15,
-    vibration: 30,
-  },
-  cruiser: {
-    strength: 60,
-    centering: 45,
-    weight: 35,
-    vibration: 40,
+    strength: 50,
+    centering: 85,
+    weight: 10,
+    vibration: 25,
   }
 };
 
 let currentEasySettings = {
-  strength: 75,
-  centering: 65,
-  weight: 80,
-  vibration: 50,
+  strength: 45,
+  centering: 30,
+  weight: 20,
+  vibration: 40,
 };
 
 function switchFFBMode(mode) {
@@ -2464,23 +2480,34 @@ function calculateAdvancedFromEasy() {
   const W = currentEasySettings.weight / 100;
   const V = currentEasySettings.vibration / 100;
 
-  // Master Gain: 2.0 to 10.0 (high gain essential for Wine FFB)
-  currentFFB.c_ff_gain = Math.round((2.0 + S * 8.0) * 10) / 10;
-  // Centering
-  currentFFB.c_ff_hi_spd = Math.round((0.5 + C * 1.5) * 100) / 100;
-  currentFFB.c_ff_lo_spd = Math.round((0.2 + C * 1.0) * 100) / 100;
-  // Resistance & Damping
-  currentFFB.c_ff_fricton = Math.round((0.1 + W * 0.9) * 100) / 100;
-  currentFFB.c_ff_undrstr = Math.round((0.3 + W * 0.7) * 100) / 100;
-  currentFFB.c_ff_assist = Math.round(Math.max(0, 1.0 - W * 0.7) * 100) / 100;
+  // Master Gain: 0.6 to 2.8 (calibrated linear range for DirectInput 8 / Wine)
+  currentFFB.c_ff_gain = Math.round((0.6 + S * 2.2) * 10) / 10;
+  
+  // Centering: High-speed highway return and low-speed parking return
+  currentFFB.c_ff_hi_spd = Math.round((0.15 + C * 0.55) * 100) / 100;
+  currentFFB.c_ff_lo_spd = Math.round((0.05 + C * 0.25) * 100) / 100;
+  
+  // Resistance & Damping: Lower friction eliminates the 'hard to move' stiffness!
+  currentFFB.c_ff_fricton = Math.round((0.02 + W * 0.20) * 100) / 100;
+  currentFFB.c_ff_undrstr = Math.round((0.25 + W * 0.45) * 100) / 100;
+  currentFFB.c_ff_assist = Math.round(Math.min(1.0, Math.max(0.3, 1.0 - W * 0.65)) * 100) / 100;
+  
   // Vibrations
-  currentFFB.c_ff_engine = Math.round((V * 0.6) * 100) / 100;
-  currentFFB.c_ff_surface = Math.round((V * 0.5) * 100) / 100;
-  currentFFB.c_ff_bumps = Math.round((0.4 + V * 0.8) * 100) / 100;
-  currentFFB.c_ff_gearbox = Math.round((V * 0.6) * 100) / 100;
-  currentFFB.c_ff_collis = Math.round((0.5 + V * 0.5) * 100) / 100;
+  currentFFB.c_ff_engine = Math.round((V * 0.40) * 100) / 100;
+  currentFFB.c_ff_surface = Math.round((V * 0.35) * 100) / 100;
+  currentFFB.c_ff_bumps = Math.round((0.2 + V * 0.6) * 100) / 100;
+  currentFFB.c_ff_gearbox = Math.round((V * 0.4) * 100) / 100;
+  currentFFB.c_ff_collis = Math.round((0.4 + V * 0.4) * 100) / 100;
 
   renderAdvancedSliders();
+
+  // If WebHID is connected, dynamically update physical motor gain (Report 13)
+  if (hidDevice && hidDevice.opened) {
+    const hwGain = Math.round(Math.max(40, Math.min(255, (0.25 + S * 0.75) * 255)));
+    try {
+      hidDevice.sendReport(13, new Uint8Array([hwGain]));
+    } catch(e) {}
+  }
 }
 
 function renderAdvancedSliders() {
@@ -2494,10 +2521,10 @@ function renderAdvancedSliders() {
 }
 
 function calculateEasyFromAdvanced() {
-  const S = Math.min(100, Math.max(0, ((currentFFB.c_ff_gain - 2.0) / 8.0) * 100));
-  const C = Math.min(100, Math.max(0, ((currentFFB.c_ff_hi_spd - 0.5) / 1.5) * 100));
-  const W = Math.min(100, Math.max(0, ((currentFFB.c_ff_fricton - 0.1) / 0.9) * 100));
-  const V = Math.min(100, Math.max(0, (currentFFB.c_ff_engine / 0.6) * 100));
+  const S = Math.min(100, Math.max(0, ((currentFFB.c_ff_gain - 0.6) / 2.2) * 100));
+  const C = Math.min(100, Math.max(0, ((currentFFB.c_ff_hi_spd - 0.15) / 0.55) * 100));
+  const W = Math.min(100, Math.max(0, ((currentFFB.c_ff_fricton - 0.02) / 0.20) * 100));
+  const V = Math.min(100, Math.max(0, (currentFFB.c_ff_engine / 0.40) * 100));
 
   currentEasySettings.strength = Math.round(S);
   currentEasySettings.centering = Math.round(C);
@@ -2517,7 +2544,7 @@ async function testEasyFFBFeel() {
 
   if (hidDevice && hidDevice.opened) {
     showToast(`🎯 Testing Easy FFB: Strength ${currentEasySettings.strength}%, Centering ${currentEasySettings.centering}%`);
-    const pullMag = Math.round(strength * (3500 + centering * 6500));
+    const pullMag = Math.round(strength * (1500 + centering * 3500));
     const startTime = Date.now();
     let sign = 1;
     if (hidRumbleInterval) clearInterval(hidRumbleInterval);
@@ -2778,8 +2805,10 @@ async function attachHIDDevice(dev, quiet = false) {
     // Report 12 (0x0C): Device Control (Byte 0 = 1: Enable Actuators)
     try {
       await hidDevice.sendReport(12, new Uint8Array([1]));
-      // Report 13 (0x0D): Device Gain (Byte 0 = 255: 100% Master Gain)
-      await hidDevice.sendReport(13, new Uint8Array([255]));
+      // Report 13 (0x0D): Device Gain (Synced with profile strength)
+      const S = currentEasySettings.strength / 100;
+      const hwGain = Math.round(Math.max(40, Math.min(255, (0.25 + S * 0.75) * 255)));
+      await hidDevice.sendReport(13, new Uint8Array([hwGain]));
       hidActuatorsEnabled = true;
     } catch(err) {
       console.warn('WebHID initial device control error:', err);
