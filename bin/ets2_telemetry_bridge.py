@@ -256,15 +256,17 @@ class ETS2TelemetryBridge:
         norm_steer = max(-1.0, min(1.0, effective_steer / 450.0))
 
         # 1. Aligning Torque (Self-Centering)
-        speed_factor = min(1.0, speed / 80.0)
-        parking_factor = max(0.0, 1.0 - speed / 15.0)
+        # Power steering makes parking and low speed gentle and effortless
+        # High speed builds authentic progressive pneumatic trail centering
+        speed_factor = min(1.0, speed / 75.0)
+        parking_assist = max(0.25, 1.0 - speed / 25.0)
 
-        # Non-linear tire aligning torque curve (simulating tire slip saturation)
+        # Smooth sinusoidal tire aligning torque curve
         sat_curve = math.sin(norm_steer * (math.pi / 2.0))
-        align_torque = -sat_curve * (0.35 + 0.65 * speed_factor) * centering
+        align_torque = -sat_curve * (0.18 / parking_assist + 0.45 * speed_factor) * centering
 
-        # 2. Hydraulic Rack Weight / Damping
-        rack_resistance = -math.copysign(1.0, norm_steer) * (0.15 * parking_factor + 0.35 * weight) if abs(norm_steer) > 0.05 else 0.0
+        # 2. Hydraulic Rack Weight / Damping (smooth linear damping without abrupt steps)
+        rack_resistance = -norm_steer * (0.06 + 0.16 * weight)
 
         # 3. Lateral G Weight Transfer
         lat_force = -self.state["lateral_g"] * 0.45
