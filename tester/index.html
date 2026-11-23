@@ -1180,6 +1180,208 @@
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
   }
+  /* ══════════════════════════════════════════════
+     PRESETS HUB & COMMUNITY MODALS STYLING
+     ══════════════════════════════════════════════ */
+  .preset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 16px;
+  }
+
+  .preset-card {
+    background: #141522;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+
+  .preset-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(108, 92, 231, 0.2);
+  }
+
+  .preset-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    gap: 10px;
+  }
+
+  .preset-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.3;
+  }
+
+  .preset-author {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--dim);
+    white-space: nowrap;
+  }
+
+  .preset-desc {
+    font-size: 12px;
+    color: var(--dim);
+    line-height: 1.45;
+    margin-bottom: 12px;
+    flex-grow: 1;
+  }
+
+  .preset-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .preset-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(108, 92, 231, 0.15);
+    color: #a29bfe;
+  }
+
+  .preset-specs {
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .spec-item {
+    display: flex;
+    justify-content: space-between;
+    color: var(--dim);
+  }
+
+  .spec-item b {
+    color: var(--accent2);
+    font-family: monospace;
+  }
+
+  .preset-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Modals */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(9, 10, 15, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .modal-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal-box {
+    background: #151624;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 26px;
+    width: 90%;
+    max-width: 520px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-close {
+    background: transparent;
+    border: none;
+    color: var(--dim);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .modal-close:hover {
+    color: #fff;
+  }
+
+  .form-group {
+    margin-bottom: 14px;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 10px 14px;
+    background: #10111a;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .form-input:focus {
+    border-color: var(--accent);
+  }
+
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 28px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.02);
+  }
+
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--accent2);
+    background: rgba(0, 206, 201, 0.05);
+  }
 </style>
 </head>
 <body>
@@ -1745,14 +1947,120 @@
       <div class="card">
         <div class="card-title">
           <span>🌐 Game Presets &amp; Community Sharing Hub</span>
-          <span class="tag" id="presets-count-tag">Loading...</span>
+          <span class="tag" id="presets-count-tag">Loading presets...</span>
         </div>
-        <div id="presets-hub-container"></div>
+        <p style="font-size: 13px; color: var(--dim); margin-bottom: 18px; line-height: 1.5;">
+          Download curated force feedback and button profiles for Euro Truck Simulator 2, or export and share your custom tuned wheel setups with the community.
+        </p>
+
+        <!-- Presets Toolbar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px;">
+          <div style="display: flex; gap: 10px; flex: 1; min-width: 280px;">
+            <input type="text" id="preset-search-input" placeholder="🔍 Search presets, tags, authors..." 
+                   style="flex: 1; padding: 10px 16px; background: #181926; border: 1px solid var(--border); border-radius: 12px; color: #fff; font-size: 13px; outline: none;"
+                   oninput="filterPresets()">
+            <select id="preset-tag-filter" 
+                    style="padding: 10px 14px; background: #181926; border: 1px solid var(--border); border-radius: 12px; color: #fff; font-size: 13px; outline: none;"
+                    onchange="filterPresets()">
+              <option value="ALL">All Categories</option>
+              <option value="Simulation">Simulation</option>
+              <option value="HeavyHaul">Heavy Haulage</option>
+              <option value="Comfort">Cruiser / Comfort</option>
+              <option value="Arcade">Arcade / Agile</option>
+              <option value="Sequential">Sequential / Auto</option>
+            </select>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button class="overlay-btn" style="padding: 10px 18px; font-size: 13px; border-radius: 12px;" onclick="openSaveModal()">
+              ➕ Save Current Settings
+            </button>
+            <button class="haptic-btn" style="padding: 10px 18px; font-size: 13px; border-radius: 12px; border-color: var(--accent2); color: var(--accent2);" onclick="openUploadModal()">
+              ⬆ Upload / Import Preset
+            </button>
+          </div>
+        </div>
+
+        <!-- Presets Grid Container -->
+        <div id="presets-grid" class="preset-grid">
+          <div style="color: var(--dim); font-size: 13px; padding: 30px; text-align: center; grid-column: 1 / -1;">
+            Loading community &amp; curated presets...
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
 
 </div> <!-- closes main-container -->
+
+<!-- MODAL: SAVE CUSTOM PRESET -->
+<div id="modal-save-preset" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>💾 Save Custom Preset</span>
+      <button class="modal-close" onclick="closeModals()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Preset Name</label>
+      <input type="text" id="save-preset-name" class="form-input" placeholder="e.g. My Heavy Haul Pro">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Author Name / Handle</label>
+      <input type="text" id="save-preset-author" class="form-input" placeholder="e.g. YourName">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Game</label>
+      <input type="text" id="save-preset-game" class="form-input" value="Euro Truck Simulator 2">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tags (comma separated)</label>
+      <input type="text" id="save-preset-tags" class="form-input" placeholder="ETS2, Simulation, H-Shifter, HeavyHaul">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea id="save-preset-desc" class="form-input" rows="3" placeholder="Describe the steering feel and recommended trucks..."></textarea>
+    </div>
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+      <button class="overlay-btn" style="flex: 1; border-radius: 12px; padding: 12px;" onclick="submitSavePreset()">Save to Library</button>
+      <button class="haptic-btn" style="flex: 0.3; border-radius: 12px; padding: 12px;" onclick="closeModals()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: UPLOAD / IMPORT COMMUNITY PRESET -->
+<div id="modal-upload" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>⬆ Upload Community Preset</span>
+      <button class="modal-close" onclick="closeModals()">✕</button>
+    </div>
+    <p style="font-size: 12px; color: var(--dim); margin-bottom: 14px;">
+      Upload or drag-and-drop any Sades Ryunix XR1 JSON preset file (<span style="color:var(--accent2);">.json</span>).
+    </p>
+    
+    <div id="dropzone" class="dropzone" onclick="document.getElementById('file-upload-input').click()">
+      <div style="font-size: 32px; margin-bottom: 8px;">📂</div>
+      <div style="font-size: 14px; font-weight: 700; color: #fff;">Click to Browse or Drag Preset Here</div>
+      <div style="font-size: 11px; color: var(--dim); margin-top: 4px;">Supports xr1-preset.v1 JSON format</div>
+      <input type="file" id="file-upload-input" accept=".json" style="display:none;" onchange="handleFileSelect(event)">
+    </div>
+
+    <!-- Preview Area -->
+    <div id="upload-preview" style="display: none; margin-top: 16px; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 14px;">
+      <div style="font-size: 12px; font-weight: 800; color: var(--accent2); margin-bottom: 6px;" id="upload-prev-name">Preset Name</div>
+      <div style="font-size: 11px; color: var(--dim); margin-bottom: 10px;" id="upload-prev-desc">Description</div>
+      <div style="display: flex; gap: 10px;">
+        <button class="overlay-btn" style="flex: 1; padding: 10px; font-size: 12px; border-radius: 10px;" onclick="confirmUploadPreset()">
+          💾 Save to Library &amp; Apply
+        </button>
+        <button class="haptic-btn" style="padding: 10px; font-size: 12px; border-radius: 10px;" onclick="cancelUpload()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="toast-container"></div>
 
@@ -1962,6 +2270,280 @@ function showToast(msg, type = 'info') {
     setTimeout(() => toast.remove(), 400);
   }, 3500);
 }
+
+// ══════════════════════════════════════════════════════
+// PRESET HUB & COMMUNITY SHARING
+// ══════════════════════════════════════════════════════
+let allPresets = [];
+let pendingUploadPreset = null;
+
+async function loadPresetHub() {
+  const container = document.getElementById('presets-grid');
+  const countTag = document.getElementById('presets-count-tag');
+  try {
+    const res = await fetch('/api/presets');
+    const data = await res.json();
+    if (data.success && data.presets) {
+      allPresets = data.presets;
+      if (countTag) countTag.textContent = `${allPresets.length} presets available`;
+      renderPresets(allPresets);
+    } else {
+      if (container) container.innerHTML = `<div style="color:var(--red); padding: 20px;">Failed to load presets: ${data.error || 'Unknown error'}</div>`;
+    }
+  } catch(err) {
+    if (container) container.innerHTML = `<div style="color:var(--dim); padding: 20px;">Could not connect to API server.</div>`;
+  }
+}
+
+function renderPresets(list) {
+  const container = document.getElementById('presets-grid');
+  if (!container) return;
+  if (list.length === 0) {
+    container.innerHTML = `<div style="color:var(--dim); font-size: 13px; padding: 40px; text-align: center; grid-column: 1 / -1;">No presets found matching your search.</div>`;
+    return;
+  }
+
+  container.innerHTML = list.map(p => {
+    const ffb = p.ffb || {};
+    const tags = p.tags || ['Simulation'];
+    return `
+      <div class="preset-card">
+        <div>
+          <div class="preset-header">
+            <span class="preset-title">${p.name || p.id}</span>
+            <span class="preset-author">by ${p.author || 'Community'}</span>
+          </div>
+          <div class="preset-desc">${p.description || 'Custom force feedback and button configuration.'}</div>
+          <div class="preset-tags">
+            ${tags.map(t => `<span class="preset-tag">${t}</span>`).join('')}
+          </div>
+          <div class="preset-specs">
+            <div class="spec-item"><span>Force Gain:</span> <b>${ffb.c_ff_gain ? ffb.c_ff_gain.toFixed(1) : '5.0'}</b></div>
+            <div class="spec-item"><span>Friction:</span> <b>${ffb.c_ff_fricton ? ffb.c_ff_fricton.toFixed(2) : '0.50'}</b></div>
+            <div class="spec-item"><span>Hi Centering:</span> <b>${ffb.c_ff_hi_spd ? ffb.c_ff_hi_spd.toFixed(2) : '1.00'}</b></div>
+            <div class="spec-item"><span>Lo Centering:</span> <b>${ffb.c_ff_lo_spd ? ffb.c_ff_lo_spd.toFixed(2) : '0.50'}</b></div>
+          </div>
+        </div>
+        <div class="preset-actions">
+          <button class="overlay-btn" style="flex: 1; padding: 8px 12px; font-size: 12px; border-radius: 10px;" onclick="applyPreset('${p.id}')">
+            🚀 1-Click Apply
+          </button>
+          <button class="haptic-btn" style="padding: 8px 10px; font-size: 12px; border-radius: 10px;" onclick="loadPresetToStudio('${p.id}')" title="Test & Adjust in FFB Studio">
+            ⚡ Studio
+          </button>
+          <button class="haptic-btn" style="padding: 8px 10px; font-size: 12px; border-radius: 10px;" onclick="exportPreset('${p.id}')" title="Download JSON to share">
+            📥 Export
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function filterPresets() {
+  const query = (document.getElementById('preset-search-input')?.value || '').toLowerCase();
+  const cat = document.getElementById('preset-tag-filter')?.value || 'ALL';
+
+  const filtered = allPresets.filter(p => {
+    const matchText = (p.name + ' ' + (p.description || '') + ' ' + (p.author || '')).toLowerCase();
+    const matchesQuery = !query || matchText.includes(query);
+    const matchesCat = cat === 'ALL' || (p.tags && p.tags.some(t => t.toLowerCase() === cat.toLowerCase()));
+    return matchesQuery && matchesCat;
+  });
+  renderPresets(filtered);
+}
+
+async function applyPreset(presetId) {
+  const p = allPresets.find(x => x.id === presetId);
+  showToast(`⏳ Applying preset '${p ? p.name : presetId}' to ETS2...`);
+  try {
+    const res = await fetch('/api/presets/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preset_id: presetId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`✅ Successfully applied to ${data.count} ETS2 profile(s)!`);
+    } else {
+      showToast(`❌ Failed to apply preset: ${data.error}`, 'error');
+    }
+  } catch(err) {
+    showToast(`❌ Communication error: ${err.message}`, 'error');
+  }
+}
+
+function exportPreset(presetId) {
+  const p = allPresets.find(x => x.id === presetId);
+  if (!p) return;
+  const jsonStr = JSON.stringify(p, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sades-xr1-${p.id}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`📥 Exported preset '${p.name}' to JSON.`);
+}
+
+function loadPresetToStudio(presetId) {
+  const p = allPresets.find(x => x.id === presetId);
+  if (!p) return;
+  if (p.ffb) {
+    for (const [k, v] of Object.entries(p.ffb)) {
+      currentFFB[k] = v;
+      const shortKey = k.replace('c_ff_', '');
+      const rng = document.getElementById(`rng-ff-${shortKey}`);
+      const badge = document.getElementById(`val-ff-${shortKey}`);
+      if (rng) rng.value = v;
+      if (badge) badge.textContent = parseFloat(v).toFixed(2);
+    }
+  }
+  switchTab('ffb');
+  showToast(`⚡ Loaded '${p.name}' into FFB Studio.`);
+}
+
+function openSaveModal() {
+  document.getElementById('modal-save-preset').classList.add('open');
+}
+
+function openUploadModal() {
+  document.getElementById('modal-upload').classList.add('open');
+}
+
+function closeModals() {
+  document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
+  cancelUpload();
+}
+
+async function submitSavePreset() {
+  const name = document.getElementById('save-preset-name').value.trim();
+  const author = document.getElementById('save-preset-author').value.trim() || 'Community';
+  const game = document.getElementById('save-preset-game').value.trim() || 'Euro Truck Simulator 2';
+  const tagsRaw = document.getElementById('save-preset-tags').value.trim();
+  const desc = document.getElementById('save-preset-desc').value.trim();
+
+  if (!name) {
+    alert('Please enter a preset name.');
+    return;
+  }
+
+  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : ['Custom'];
+
+  const payload = {
+    schema: 'xr1-preset.v1',
+    name: name,
+    author: author,
+    game: game,
+    description: desc,
+    tags: tags,
+    ffb: currentFFB,
+    buttons: {
+      parkingbrake: 'keyboard.space?0 | joy.b15?0',
+      gearboxhshifter: '1',
+      gearbox: '2',
+      hshifter_toggle1: 'joy.b23?0',
+      hshifter_gear1: 'joy.b16?0',
+      hshifter_gear2: 'joy.b17?0',
+      hshifter_gear3: 'joy.b18?0',
+      hshifter_gear4: 'joy.b19?0',
+      hshifter_gear5: 'joy.b20?0',
+      hshifter_gear6: 'joy.b21?0',
+      hshifter_gear_r: 'joy.b22?0'
+    }
+  };
+
+  try {
+    const res = await fetch('/api/presets/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`💾 Preset '${name}' saved successfully!`);
+      closeModals();
+      loadPresetHub();
+    } else {
+      showToast(`❌ Error saving preset: ${data.error}`, 'error');
+    }
+  } catch(err) {
+    showToast(`❌ Network error: ${err.message}`, 'error');
+  }
+}
+
+function handleFileSelect(evt) {
+  const file = evt.target.files ? evt.target.files[0] : (evt.dataTransfer ? evt.dataTransfer.files[0] : null);
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!parsed.name && !parsed.id) {
+        alert('Invalid preset JSON: Missing name or id property.');
+        return;
+      }
+      pendingUploadPreset = parsed;
+      document.getElementById('upload-preview').style.display = 'block';
+      document.getElementById('upload-prev-name').textContent = `📄 ${parsed.name || parsed.id}`;
+      document.getElementById('upload-prev-desc').textContent = parsed.description || 'Valid xr1 preset loaded.';
+    } catch(err) {
+      alert(`Invalid JSON file: ${err.message}`);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function cancelUpload() {
+  pendingUploadPreset = null;
+  const prev = document.getElementById('upload-preview');
+  if (prev) prev.style.display = 'none';
+  const inp = document.getElementById('file-upload-input');
+  if (inp) inp.value = '';
+}
+
+async function confirmUploadPreset() {
+  if (!pendingUploadPreset) return;
+  showToast('⏳ Uploading and validating preset...');
+  try {
+    const res = await fetch('/api/presets/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pendingUploadPreset)
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`✅ Community preset '${data.preset.name}' added to library!`);
+      closeModals();
+      loadPresetHub();
+      applyPreset(data.preset.id);
+    } else {
+      showToast(`❌ Upload failed: ${data.error}`, 'error');
+    }
+  } catch(err) {
+    showToast(`❌ Communication error: ${err.message}`, 'error');
+  }
+}
+
+// Drag & drop dropzone listeners
+document.addEventListener('DOMContentLoaded', () => {
+  const dz = document.getElementById('dropzone');
+  if (dz) {
+    ['dragenter', 'dragover'].forEach(name => {
+      dz.addEventListener(name, (e) => { e.preventDefault(); dz.classList.add('dragover'); }, false);
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      dz.addEventListener(name, (e) => { e.preventDefault(); dz.classList.remove('dragover'); }, false);
+    });
+    dz.addEventListener('drop', (e) => {
+      if (e.dataTransfer && e.dataTransfer.files.length) {
+        handleFileSelect(e);
+      }
+    }, false);
+  }
+});
 // ══════════════════════════════════════════════════════
 // RYUNIX XR1 BUTTON MAPPINGS & CONFIGURATION
 // ══════════════════════════════════════════════════════
@@ -2463,8 +3045,9 @@ function setBtnClass(id, active) {
 // Start update loop
 requestAnimationFrame(updateLoop);
 
-// Auto-check existing gamepads
+// Auto-check existing gamepads & preload presets
 setTimeout(() => {
+  if (typeof loadPresetHub === 'function') loadPresetHub();
   const gps = navigator.getGamepads ? navigator.getGamepads() : [];
   for (const gp of gps) {
     if (gp) {
