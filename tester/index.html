@@ -1046,6 +1046,64 @@
     transition: border-color 0.2s;
   }
 
+  .ffb-mode-toggle {
+    flex: 1;
+    padding: 9px 14px;
+    border-radius: 9px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--dim);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .ffb-mode-toggle:hover {
+    color: var(--text);
+    background: rgba(255,255,255,0.04);
+  }
+  .ffb-mode-toggle.active {
+    background: linear-gradient(135deg, rgba(30, 144, 255, 0.25), rgba(46, 213, 115, 0.25));
+    border-color: rgba(46, 213, 115, 0.5);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  .easy-card {
+    background: rgba(22, 24, 38, 0.7);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+  .easy-card:hover {
+    background: rgba(30, 34, 54, 0.85);
+    border-color: rgba(30, 144, 255, 0.5);
+    transform: translateY(-2px);
+  }
+  .easy-card.active {
+    background: linear-gradient(135deg, rgba(30, 144, 255, 0.15), rgba(46, 213, 115, 0.12));
+    border-color: #2ed573;
+    box-shadow: 0 4px 15px rgba(46, 213, 115, 0.2);
+  }
+  .easy-card-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .easy-card-desc {
+    font-size: 11px;
+    color: var(--dim);
+    line-height: 1.4;
+  }
+
   .ffb-slider-row:hover {
     border-color: var(--accent);
   }
@@ -1743,6 +1801,99 @@
             Fine-tune physical motor resistance, dynamic centering torque, and road rumble effects for the Sades Ryunix XR1 steering wheel.
           </p>
 
+          <!-- MODE SWITCHER PILL -->
+          <div style="display: flex; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 18px; gap: 4px;">
+            <button id="btn-ffb-mode-easy" class="ffb-mode-toggle active" onclick="switchFFBMode('easy')">
+              🟢 Easy Mode (Official App Style)
+            </button>
+            <button id="btn-ffb-mode-advanced" class="ffb-mode-toggle" onclick="switchFFBMode('advanced')">
+              ⚙️ Advanced Telemetry (10 Channels)
+            </button>
+          </div>
+
+          <!-- EASY MODE PANEL (OFFICIAL APP STYLE) -->
+          <div id="ffb-easy-panel">
+            <!-- Quick Driving Profiles -->
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent2); font-weight: 800; margin-bottom: 10px;">
+              Quick Driving Profiles
+            </div>
+            <div class="easy-presets-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
+              <div class="easy-card active" id="card-preset-heavy" onclick="selectEasyPreset('heavy')">
+                <div style="font-size: 22px; margin-bottom: 4px;">🚛</div>
+                <div class="easy-card-title">Heavy Truck (ETS2)</div>
+                <div class="easy-card-desc">Authentic heavy steering, high rack damping, and deep diesel engine rumble.</div>
+              </div>
+              <div class="easy-card" id="card-preset-racing" onclick="selectEasyPreset('racing')">
+                <div style="font-size: 22px; margin-bottom: 4px;">🏎️</div>
+                <div class="easy-card-title">Track &amp; GT Racing</div>
+                <div class="easy-card-desc">Stiff centering return force, rapid slip reaction, and maximum curb texture.</div>
+              </div>
+              <div class="easy-card" id="card-preset-drift" onclick="selectEasyPreset('drift')">
+                <div style="font-size: 22px; margin-bottom: 4px;">💨</div>
+                <div class="easy-card-title">Drift &amp; Agile</div>
+                <div class="easy-card-desc">Featherlight wheel, instant counter-steering return, zero mechanical drag.</div>
+              </div>
+              <div class="easy-card" id="card-preset-cruiser" onclick="selectEasyPreset('cruiser')">
+                <div style="font-size: 22px; margin-bottom: 4px;">🛋️</div>
+                <div class="easy-card-title">Smooth Cruiser</div>
+                <div class="easy-card-desc">Comfortable long-haul driving with 80% power steering assist and gentle feedback.</div>
+              </div>
+            </div>
+
+            <!-- Master Wheel Feel Controls -->
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent2); font-weight: 800; margin-bottom: 10px;">
+              Master Wheel Feel Controls
+            </div>
+
+            <div class="ffb-slider-row">
+              <div class="ffb-slider-header">
+                <span class="ffb-slider-title">💪 Master FFB Strength</span>
+                <span class="ffb-slider-val" id="val-easy-strength">75%</span>
+              </div>
+              <div class="ffb-slider-desc">Overall motor power and peak torque output for all physical wheel resistance.</div>
+              <input type="range" class="ffb-range" id="rng-easy-strength" min="0" max="100" step="1" value="75" oninput="updateEasySlider('strength', this.value)">
+            </div>
+
+            <div class="ffb-slider-row">
+              <div class="ffb-slider-header">
+                <span class="ffb-slider-title">⚡ Wheel Centering Speed</span>
+                <span class="ffb-slider-val" id="val-easy-centering">65%</span>
+              </div>
+              <div class="ffb-slider-desc">How quickly and firmly the steering wheel returns to the center position when released.</div>
+              <input type="range" class="ffb-range" id="rng-easy-centering" min="0" max="100" step="1" value="65" oninput="updateEasySlider('centering', this.value)">
+            </div>
+
+            <div class="ffb-slider-row">
+              <div class="ffb-slider-header">
+                <span class="ffb-slider-title">🛞 Wheel Weight &amp; Resistance</span>
+                <span class="ffb-slider-val" id="val-easy-weight">80%</span>
+              </div>
+              <div class="ffb-slider-desc">Simulates heavy hydraulic fluid resistance, tire contact friction, and rack inertia.</div>
+              <input type="range" class="ffb-range" id="rng-easy-weight" min="0" max="100" step="1" value="80" oninput="updateEasySlider('weight', this.value)">
+            </div>
+
+            <div class="ffb-slider-row">
+              <div class="ffb-slider-header">
+                <span class="ffb-slider-title">📳 Road &amp; Engine Vibration</span>
+                <span class="ffb-slider-val" id="val-easy-vibration">50%</span>
+              </div>
+              <div class="ffb-slider-desc">Tactile haptic vibration for diesel RPM resonance, cobblestones, rumble strips, and gear shifts.</div>
+              <input type="range" class="ffb-range" id="rng-easy-vibration" min="0" max="100" step="1" value="50" oninput="updateEasySlider('vibration', this.value)">
+            </div>
+
+            <!-- Easy Mode Action Buttons -->
+            <div style="display: flex; gap: 10px; margin-top: 18px;">
+              <button class="overlay-btn" style="flex: 1.2; border-radius: 12px; padding: 12px;" onclick="syncFFBToETS2()">
+                🚀 1-Click Sync to ETS2
+              </button>
+              <button class="haptic-btn" style="flex: 1; border-radius: 12px; padding: 12px;" onclick="testEasyFFBFeel()">
+                🎯 Feel Wheel in Hand
+              </button>
+            </div>
+          </div>
+
+          <!-- ADVANCED MODE PANEL (10-CHANNEL DIRECTINPUT TELEMETRY) -->
+          <div id="ffb-advanced-panel" style="display: none;">
           <!-- Group 1: Master Torque & Resistance -->
           <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent2); font-weight: 800; margin-bottom: 10px;">
             1. Master Torque &amp; Internal Resistance
@@ -1859,6 +2010,7 @@
             <button class="overlay-btn" style="flex: 1; border-radius: 12px; padding: 12px;" onclick="syncFFBToETS2()">💾 Apply FFB to ETS2 Profiles</button>
             <button class="haptic-btn" style="flex: 0.4; border-radius: 12px; padding: 12px;" onclick="resetFFBDefaults()">↺ Reset</button>
           </div>
+          </div> <!-- closes ffb-advanced-panel -->
         </div>
       </div>
 
@@ -2084,18 +2236,196 @@
 // ══════════════════════════════════════════════════════
 let currentFFB = {
   c_ff_enabled: 1.0,
-  c_ff_gain: 5.0,
-  c_ff_hi_spd: 1.0,
-  c_ff_lo_spd: 0.5,
-  c_ff_fricton: 0.5,
-  c_ff_engine: 0.25,
-  c_ff_surface: 0.3,
-  c_ff_bumps: 0.8,
-  c_ff_collis: 1.0,
-  c_ff_gearbox: 0.35,
-  c_ff_undrstr: 0.5,
-  c_ff_assist: 0.5
+  c_ff_gain: 8.0,
+  c_ff_hi_spd: 1.48,
+  c_ff_lo_spd: 0.85,
+  c_ff_fricton: 0.82,
+  c_ff_engine: 0.30,
+  c_ff_surface: 0.25,
+  c_ff_bumps: 0.80,
+  c_ff_collis: 0.75,
+  c_ff_gearbox: 0.30,
+  c_ff_undrstr: 0.86,
+  c_ff_assist: 0.44
 };
+
+// ══════════════════════════════════════════════════════
+// OFFICIAL APP STYLE: EASY MODE FFB & PRESETS
+// ══════════════════════════════════════════════════════
+let currentFFBMode = 'easy';
+
+const EASY_PRESETS = {
+  heavy: {
+    strength: 75,
+    centering: 65,
+    weight: 80,
+    vibration: 50,
+  },
+  racing: {
+    strength: 85,
+    centering: 90,
+    weight: 50,
+    vibration: 70,
+  },
+  drift: {
+    strength: 65,
+    centering: 95,
+    weight: 15,
+    vibration: 30,
+  },
+  cruiser: {
+    strength: 60,
+    centering: 45,
+    weight: 35,
+    vibration: 40,
+  }
+};
+
+let currentEasySettings = {
+  strength: 75,
+  centering: 65,
+  weight: 80,
+  vibration: 50,
+};
+
+function switchFFBMode(mode) {
+  currentFFBMode = mode;
+  const btnEasy = document.getElementById('btn-ffb-mode-easy');
+  const btnAdv = document.getElementById('btn-ffb-mode-advanced');
+  const panelEasy = document.getElementById('ffb-easy-panel');
+  const panelAdv = document.getElementById('ffb-advanced-panel');
+
+  if (mode === 'easy') {
+    if (btnEasy) btnEasy.classList.add('active');
+    if (btnAdv) btnAdv.classList.remove('active');
+    if (panelEasy) panelEasy.style.display = 'block';
+    if (panelAdv) panelAdv.style.display = 'none';
+  } else {
+    if (btnEasy) btnEasy.classList.remove('active');
+    if (btnAdv) btnAdv.classList.add('active');
+    if (panelEasy) panelEasy.style.display = 'none';
+    if (panelAdv) panelAdv.style.display = 'block';
+  }
+}
+
+function selectEasyPreset(key) {
+  const p = EASY_PRESETS[key];
+  if (!p) return;
+  document.querySelectorAll('.easy-card').forEach(c => c.classList.remove('active'));
+  const card = document.getElementById(`card-preset-${key}`);
+  if (card) card.classList.add('active');
+
+  currentEasySettings = { ...p };
+  applyEasyToUI();
+  calculateAdvancedFromEasy();
+  showToast(`⚡ Selected ${key.toUpperCase()} Profile`);
+}
+
+function updateEasySlider(param, value) {
+  currentEasySettings[param] = parseFloat(value);
+  const badge = document.getElementById(`val-easy-${param}`);
+  if (badge) badge.textContent = `${Math.round(value)}%`;
+  document.querySelectorAll('.easy-card').forEach(c => c.classList.remove('active'));
+  calculateAdvancedFromEasy();
+}
+
+function applyEasyToUI() {
+  for (const [param, val] of Object.entries(currentEasySettings)) {
+    const rng = document.getElementById(`rng-easy-${param}`);
+    const lbl = document.getElementById(`val-easy-${param}`);
+    if (rng) rng.value = val;
+    if (lbl) lbl.textContent = `${Math.round(val)}%`;
+  }
+}
+
+function calculateAdvancedFromEasy() {
+  const S = currentEasySettings.strength / 100;
+  const C = currentEasySettings.centering / 100;
+  const W = currentEasySettings.weight / 100;
+  const V = currentEasySettings.vibration / 100;
+
+  // Master Gain: 2.0 to 10.0 (high gain essential for Wine FFB)
+  currentFFB.c_ff_gain = Math.round((2.0 + S * 8.0) * 10) / 10;
+  // Centering
+  currentFFB.c_ff_hi_spd = Math.round((0.5 + C * 1.5) * 100) / 100;
+  currentFFB.c_ff_lo_spd = Math.round((0.2 + C * 1.0) * 100) / 100;
+  // Resistance & Damping
+  currentFFB.c_ff_fricton = Math.round((0.1 + W * 0.9) * 100) / 100;
+  currentFFB.c_ff_undrstr = Math.round((0.3 + W * 0.7) * 100) / 100;
+  currentFFB.c_ff_assist = Math.round(Math.max(0, 1.0 - W * 0.7) * 100) / 100;
+  // Vibrations
+  currentFFB.c_ff_engine = Math.round((V * 0.6) * 100) / 100;
+  currentFFB.c_ff_surface = Math.round((V * 0.5) * 100) / 100;
+  currentFFB.c_ff_bumps = Math.round((0.4 + V * 0.8) * 100) / 100;
+  currentFFB.c_ff_gearbox = Math.round((V * 0.6) * 100) / 100;
+  currentFFB.c_ff_collis = Math.round((0.5 + V * 0.5) * 100) / 100;
+
+  renderAdvancedSliders();
+}
+
+function renderAdvancedSliders() {
+  for (const [k, v] of Object.entries(currentFFB)) {
+    const shortKey = k.replace('c_ff_', '');
+    const rng = document.getElementById(`rng-ff-${shortKey}`);
+    const badge = document.getElementById(`val-ff-${shortKey}`);
+    if (rng) rng.value = v;
+    if (badge) badge.textContent = parseFloat(v).toFixed(2);
+  }
+}
+
+function calculateEasyFromAdvanced() {
+  const S = Math.min(100, Math.max(0, ((currentFFB.c_ff_gain - 2.0) / 8.0) * 100));
+  const C = Math.min(100, Math.max(0, ((currentFFB.c_ff_hi_spd - 0.5) / 1.5) * 100));
+  const W = Math.min(100, Math.max(0, ((currentFFB.c_ff_fricton - 0.1) / 0.9) * 100));
+  const V = Math.min(100, Math.max(0, (currentFFB.c_ff_engine / 0.6) * 100));
+
+  currentEasySettings.strength = Math.round(S);
+  currentEasySettings.centering = Math.round(C);
+  currentEasySettings.weight = Math.round(W);
+  currentEasySettings.vibration = Math.round(V);
+
+  applyEasyToUI();
+}
+
+async function testEasyFFBFeel() {
+  const strength = currentEasySettings.strength / 100;
+  const centering = currentEasySettings.centering / 100;
+  const weight = currentEasySettings.weight / 100;
+  const vibration = currentEasySettings.vibration / 100;
+
+  animateHapticPulse(vibration, strength, 1200);
+
+  if (hidDevice && hidDevice.opened) {
+    showToast(`🎯 Testing Easy FFB: Strength ${currentEasySettings.strength}%, Centering ${currentEasySettings.centering}%`);
+    const pullMag = Math.round(strength * (3500 + centering * 6500));
+    const startTime = Date.now();
+    let sign = 1;
+    if (hidRumbleInterval) clearInterval(hidRumbleInterval);
+    hidRumbleInterval = setInterval(async () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > 1200) {
+        clearInterval(hidRumbleInterval);
+        hidRumbleInterval = null;
+        await sendConstantForce(0);
+        return;
+      }
+      try {
+        if (elapsed < 400) {
+          await sendConstantForce(-pullMag);
+        } else if (elapsed < 800) {
+          await sendConstantForce(pullMag);
+        } else {
+          sign = -sign;
+          const vibForce = Math.round(sign * vibration * 4000);
+          const centerSpring = Math.round(Math.sin(elapsed * 0.05) * pullMag * 0.5);
+          await sendConstantForce(centerSpring + vibForce);
+        }
+      } catch(e) {}
+    }, 25);
+  } else {
+    showToast(`🎯 Testing simulated feel (Connect WebHID above to feel physical wheel torque)`);
+  }
+}
 
 let currentTab = 'diag';
 
@@ -2120,24 +2450,12 @@ function updateFFBValue(key, val) {
   const shortKey = key.replace('c_ff_', '');
   const badge = document.getElementById(`val-ff-${shortKey}`);
   if (badge) badge.textContent = fVal.toFixed(2);
+  calculateEasyFromAdvanced();
 }
 
 function resetFFBDefaults() {
-  const defaults = {
-    c_ff_gain: 5.0, c_ff_fricton: 0.5, c_ff_assist: 0.5,
-    c_ff_hi_spd: 1.0, c_ff_lo_spd: 0.5, c_ff_undrstr: 0.5,
-    c_ff_engine: 0.25, c_ff_surface: 0.3, c_ff_bumps: 0.8,
-    c_ff_collis: 1.0, c_ff_gearbox: 0.35
-  };
-  for (const [k, v] of Object.entries(defaults)) {
-    currentFFB[k] = v;
-    const shortKey = k.replace('c_ff_', '');
-    const rng = document.getElementById(`rng-ff-${shortKey}`);
-    const badge = document.getElementById(`val-ff-${shortKey}`);
-    if (rng) rng.value = v;
-    if (badge) badge.textContent = v.toFixed(2);
-  }
-  showToast('↺ Force feedback sliders reset to factory defaults.');
+  selectEasyPreset('heavy');
+  showToast('↺ Force feedback sliders reset to Heavy Truck defaults.');
 }
 
 async function syncFFBToETS2() {
@@ -2718,6 +3036,7 @@ function loadPresetToStudio(presetId) {
       if (rng) rng.value = v;
       if (badge) badge.textContent = parseFloat(v).toFixed(2);
     }
+    calculateEasyFromAdvanced();
   }
   switchTab('ffb');
   showToast(`⚡ Loaded '${p.name}' into FFB Studio.`);
@@ -3445,6 +3764,8 @@ requestAnimationFrame(updateLoop);
 // Auto-check existing gamepads, WebHID & preload presets
 setTimeout(() => {
   if (typeof initWebHID === 'function') initWebHID();
+  if (typeof applyEasyToUI === 'function') applyEasyToUI();
+  if (typeof calculateAdvancedFromEasy === 'function') calculateAdvancedFromEasy();
   if (typeof loadPresetHub === 'function') loadPresetHub();
   const gps = navigator.getGamepads ? navigator.getGamepads() : [];
   for (const gp of gps) {
