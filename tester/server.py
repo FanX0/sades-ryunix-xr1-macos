@@ -134,9 +134,13 @@ class StudioHandler(http.server.SimpleHTTPRequestHandler):
                 body = self.read_json_body()
                 b = get_bridge()
                 steer_deg = float(body.get("steer_deg", 0.0))
-                speed_hint = float(body.get("speed_hint", 0.0))
-                b.update_steer_input(steer_deg, speed_hint)
-                self.send_json({"success": True, "state": b.state})
+                throttle = float(body.get("throttle", 0.0))
+                brake = float(body.get("brake", 0.0))
+                speed_hint = body.get("speed_hint")
+                if speed_hint is not None:
+                    speed_hint = float(speed_hint)
+                b.update_steer_input(steer_deg, throttle=throttle, brake=brake, speed_hint=speed_hint)
+                self.send_json({"success": True, "running": b.running, "state": b.state})
             else:
                 self.send_json({"success": False, "error": "Bridge module unavailable"})
             return

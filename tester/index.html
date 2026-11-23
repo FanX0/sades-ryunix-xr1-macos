@@ -2653,19 +2653,40 @@ function startTelemetryPolling() {
   if (telemetryPollInterval) clearInterval(telemetryPollInterval);
   telemetryPollInterval = setInterval(async () => {
     try {
-      // Send current wheel angle if available
+      // Gather live wheel angle and pedal inputs
       let steerAngle = 0;
-      if (activeGamepad && activeGamepad.axes && activeGamepad.axes.length > 0) {
-        steerAngle = (activeGamepad.axes[0] - steerCenterOffset) * 540;
+      let throttleVal = 0;
+      let brakeVal = 0;
+
+      if (activeGamepad && activeGamepad.axes) {
+        const axes = activeGamepad.axes;
+        if (axes.length > 0) {
+          steerAngle = (axes[0] - steerCenterOffset) * 540;
+        }
+        if (config.throttleAxis !== undefined && axes[config.throttleAxis] !== undefined) {
+          throttleVal = normalizePedal(axes[config.throttleAxis], config.throttleInv) / 100.0;
+        }
+        if (config.brakeAxis !== undefined && axes[config.brakeAxis] !== undefined) {
+          brakeVal = normalizePedal(axes[config.brakeAxis], config.brakeInv) / 100.0;
+        }
       }
-      
-      const res = await fetch('/api/telemetry/status');
+
+      // Send live inputs to telemetry bridge
+      const res = await fetch('/api/telemetry/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          steer_deg: steerAngle,
+          throttle: throttleVal,
+          brake: brakeVal
+        })
+      });
       const data = await res.json();
       if (data.success && data.state) {
-        updateTelemetryUI(data.state, data.running);
+        updateTelemetryUI(data.state, data.running !== undefined ? data.running : telemetryRunning);
 
         // If WebHID is armed and bridge is running, output physical torque to wheel!
-        if (data.running && hidDevice && hidDevice.opened && !hidRumbleInterval) {
+        if (telemetryRunning && hidDevice && hidDevice.opened && !hidRumbleInterval) {
           const hwForce = data.state.hw_force || 0;
           sendConstantForce(hwForce);
         }
@@ -2742,27 +2763,29 @@ function updateTelemetryUI(state, running) {
     srcEl.style.color = state.connected ? '#2ed573' : '#70a1ff';
   }
 
-  // Torque bar visualization
+  // Torque bar visualization with strict integer deadzone
   if (bar) {
     const t = state.ffb_torque || 0; // -1 to +1
-    if (t < 0) {
+    const pct = Math.round(t * 100);
+    if (pct < 0) {
       // Left pull: bar extends left from 50%
-      const w = Math.min(50, Math.abs(t) * 50);
+      const w = Math.min(50, Math.abs(pct) * 0.5);
       bar.style.left = `${50 - w}%`;
       bar.style.width = `${w}%`;
       bar.style.background = 'linear-gradient(90deg, #1e90ff, #70a1ff)';
-      if (lbl) lbl.textContent = `Wheel Torque: ◀ Left Force (${Math.round(Math.abs(t)*100)}%)`;
-    } else if (t > 0) {
+      if (lbl) lbl.textContent = `Wheel Torque: ◀ Left Force (${Math.abs(pct)}%)`;
+    } else if (pct > 0) {
       // Right pull: bar extends right from 50%
-      const w = Math.min(50, t * 50);
+      const w = Math.min(50, pct * 0.5);
       bar.style.left = '50%';
       bar.style.width = `${w}%`;
       bar.style.background = 'linear-gradient(90deg, #2ed573, #7bed9f)';
-      if (lbl) lbl.textContent = `Wheel Torque: Right Force ▶ (${Math.round(t*100)}%)`;
+      if (lbl) lbl.textContent = `Wheel Torque: Right Force ▶ (${pct}%)`;
     } else {
+      // Center / deadzone
       bar.style.left = '50%';
       bar.style.width = '0%';
-      if (lbl) lbl.textContent = 'Wheel Torque: Center (0)';
+      if (lbl) lbl.textContent = 'Wheel Torque: Center (0%)';
     }
   }
 }

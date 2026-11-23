@@ -304,6 +304,13 @@ def main():
 
     configured_profiles = scan_and_configure_ets2(doc_path, preset_data, quiet=args.json)
 
+    # Ensure SCS telemetry plugins are deployed to Wine ETS2
+    try:
+        from install_telemetry_plugin import install_plugins
+        install_plugins()
+    except Exception:
+        pass
+
     result = {
         "success": len(configured_profiles) > 0,
         "preset": preset_data.get("name", "Custom"),
