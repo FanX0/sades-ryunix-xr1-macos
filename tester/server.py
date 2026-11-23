@@ -23,6 +23,12 @@ SERVER_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SERVER_DIR.parent
 PRESETS_DIR = REPO_ROOT / "config/presets"
 
+sys.path.insert(0, str(REPO_ROOT / "bin"))
+try:
+    from ets2_telemetry_bridge import get_bridge
+except ImportError:
+    get_bridge = None
+
 
 def get_presets():
     PRESETS_DIR.mkdir(parents=True, exist_ok=True)
@@ -98,10 +104,42 @@ class StudioHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json({"success": True, "profiles": profiles, "count": len(profiles)})
             return
 
+        if parsed.path == "/api/telemetry/status":
+            if get_bridge:
+                b = get_bridge()
+                self.send_json({"success": True, "running": b.running, "state": b.state})
+            else:
+                self.send_json({"success": False, "error": "Bridge module unavailable"})
+            return
+
         super().do_GET()
 
     def do_POST(self):
         parsed = urlparse(self.path)
+
+        if parsed.path == "/api/telemetry/toggle":
+            if get_bridge:
+                b = get_bridge()
+                if b.running:
+                    b.stop()
+                else:
+                    b.start()
+                self.send_json({"success": True, "running": b.running, "state": b.state})
+            else:
+                self.send_json({"success": False, "error": "Bridge module unavailable"})
+            return
+
+        if parsed.path == "/api/telemetry/update":
+            if get_bridge:
+                body = self.read_json_body()
+                b = get_bridge()
+                steer_deg = float(body.get("steer_deg", 0.0))
+                speed_hint = float(body.get("speed_hint", 0.0))
+                b.update_steer_input(steer_deg, speed_hint)
+                self.send_json({"success": True, "state": b.state})
+            else:
+                self.send_json({"success": False, "error": "Bridge module unavailable"})
+            return
 
         if parsed.path == "/api/presets/apply":
             try:
