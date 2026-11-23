@@ -7,8 +7,9 @@ Custom driver integration, DirectInput 8 bridge, Force Feedback (FFB) tuning stu
 - **Automatic DirectInput Enumeration**: Resolves HID enumeration issues where macOS MFi GameController hides raw USB steering wheels from Wine.
 - **Steam Overlay Hook Prevention**: Prevents GameOverlayRenderer from intercepting DirectInput calls in 64-bit Wine environments.
 - **Automatic ETS2 Profile Configuration**: Detects existing game profiles and maps steering, pedals, H-shifter gears (1-6 + Reverse), Handbrake (B15), and Lo/Hi Range selector (B23).
-- **Web Force Feedback Studio**: Interactive tuning dashboard (`./test.sh`) with 10 granular FFB sliders for gain, friction, assist, centering springs, understeer, and environmental vibrations.
-- **Live Physical Haptics Testing**: Real-time physical wheel motor vibration tests (Centering, Engine Rumble, Road Surface, Curb Bumps, Collision Shock) using Web Gamepad Haptics and WebHID.
+- **Web Force Feedback Studio**: Interactive tuning dashboard (`./test.sh`) with an official-wheel-app **Easy Mode** (4 macro sliders + driving style cards) and an **Advanced Mode** (10 granular DirectInput telemetry channels).
+- **WebHID Direct Hardware Motor Actuator**: Transmits raw USB PID reports (`0x0C`, `0x0D`, `0x05`, `0x04`) directly to the wheel via Chromium WebHID, delivering real physical torque, dynamic centering pull, and engine vibration right in your hands without legacy Apple framework limitations.
+- **Dynamic DirectInput8 GUID Auto-Sync**: Automatically detects live Wine instance GUIDs from `game.log.txt` and `global_controls.sii`, un-blacklists the wheel, and keeps profile bindings permanently synchronized.
 - **Community Preset Hub**: Browse curated presets, 1-click apply to game profiles, export portable `.json` files, and upload community presets.
 - **Safe Stock Restore**: Automated backups of all modified binary libraries allowing instant uninstallation.
 
@@ -62,11 +63,71 @@ Navigate to `http://localhost:8080` to access:
 
 | Preset | Description | Key Characteristics |
 | :--- | :--- | :--- |
-| **Balanced Simulation (Default)** | Authentic everyday trucking calibration. | Centering 1.0/0.5, Friction 0.5, Gain 5.0 |
-| **Realistic Heavy Haulage** | Heavy resistance for 50t+ specialized cargo. | Centering 1.4/1.6, Friction 0.75, Gain 6.5, Engine 0.45 |
-| **Smooth Highway Cruiser** | Relaxed steering for long-distance highway hauls. | Centering 0.8/0.4, Friction 0.35, Light assist 0.65 |
-| **Arcade & Fast Return** | Agile, snappy wheel recovery and high collision punch. | Centering 1.6/0.3, Friction 0.10, Gain 5.5 |
-| **Sequential & City Transit** | Paddle shifters (B1/B2) and automatic assist for tight city traffic. | Centering 0.9/0.35, High assist 0.70 |
+| **Balanced Simulation (Default)** | Authentic everyday trucking calibration. | Centering 1.45/0.85, Friction 0.75, Gain 8.0 |
+| **Realistic Heavy Haulage** | Heavy resistance for 50t+ specialized cargo. | Centering 1.60/0.95, Friction 0.90, Gain 8.8, Engine 0.40 |
+| **Smooth Highway Cruiser** | Relaxed steering for long-distance highway hauls. | Centering 1.15/0.65, Friction 0.40, Gain 6.8, Light assist 0.75 |
+| **Arcade & Fast Return** | Agile, snappy wheel recovery and high collision punch. | Centering 1.85/1.10, Friction 0.20, Gain 7.6 |
+| **Sequential & City Transit** | Paddle shifters (B1/B2) and automatic assist for tight city traffic. | Centering 1.25/0.70, High assist 0.80, Gain 6.8 |
+
+---
+
+## Force Feedback & Easy Mode Control
+
+The Web Diagnostic Studio (`http://localhost:8080`) provides an official-app-style control center inspired by Logitech G HUB, Fanatec FanaLab, and the Ryunix Windows utility.
+
+### 🟢 Easy Mode (Recommended)
+Designed for effortless, intuitive tuning with 4 master sliders:
+1. **Master FFB Strength (0–100%)**: Scales overall motor torque and peak physical steering resistance.
+2. **Wheel Centering Speed (Soft $\leftrightarrow$ Fast)**: Controls how firmly and rapidly the wheel returns to 0° when you release it.
+3. **Wheel Weight & Resistance (Light $\leftrightarrow$ Heavy)**: Simulates heavy hydraulic power steering fluid and tire patch friction.
+4. **Road & Engine Vibration (Gentle $\leftrightarrow$ Intense)**: Adjusts tactile vibrations for diesel engine RPM resonance, cobblestones, rumble strips, and gear shifts.
+
+#### 1-Click Driving Style Profiles
+- 🚛 **Heavy Truck (ETS2 / ATS)**: Authentic heavy steering, high rack damping, and deep diesel engine rumble.
+- 🏎️ **Track & GT Racing**: Stiff centering return force, rapid slip reaction, and maximum curb texture.
+- 💨 **Drift & Agile**: Featherlight wheel, instant counter-steering recovery, zero mechanical drag.
+- 🛋️ **Smooth Cruiser**: Long-distance highway comfort with 80% power steering assist.
+
+### ⚙️ Advanced Telemetry Mode (10 Channels)
+For telemetry enthusiasts, switch to Advanced Mode to fine-tune individual `controls.sii` parameters:
+- `c_ff_gain`: Master DirectInput motor multiplier (tuned to `8.0` for Wine).
+- `c_ff_hi_spd` / `c_ff_lo_spd`: Speed-dependent return spring tension.
+- `c_ff_fricton` / `c_ff_undrstr` / `c_ff_assist`: Tire friction, slip lightening, and power steering curves.
+- `c_ff_engine` / `c_ff_surface` / `c_ff_bumps` / `c_ff_gearbox` / `c_ff_collis`: Granular environmental vibrations.
+
+All slider adjustments synchronize bidirectionally between Easy and Advanced modes in real time.
+
+---
+
+## ⚡ WebHID Direct Hardware Motor Actuator
+
+### Why WebHID is Required on macOS
+On macOS, Chromium browsers route standard Gamepad API rumble through Apple's legacy `ForceFeedback.framework`. Apple deprecated this framework and does not provide an in-kernel or user-space PID driver for generic USB racing wheels (VID `0x11FF`, PID `0x2364`), causing standard gamepad vibration calls to fail silently.
+
+### How WebHID Works
+WebHID (`navigator.hid`) communicates directly with macOS `IOHIDKit` USB endpoints, bypassing Apple's legacy framework completely:
+1. Open the Web Studio in **Google Chrome**, **Microsoft Edge**, or **Brave**.
+2. Click **`🔌 Connect WebHID`** in the top navigation bar.
+3. Select **Ryunix XR1** from the browser USB permission prompt.
+4. Once connected, click **`🎯 Feel Wheel in Hand`** or any effect in the **Live Physical Haptics Test Suite**:
+   - **Report 12 (`0x0C`)**: Enables physical motor coils.
+   - **Report 13 (`0x0D`)**: Sets master gain to 100%.
+   - **Report 5 (`0x05`)**: Sends directional constant torque and centering spring forces.
+   - **Report 10 (`0x0A`)**: Controls effect playback.
+
+Your steering wheel will physically pull, center, and vibrate in your hands!
+
+---
+
+## Euro Truck Simulator 2 In-Game Recommendations
+
+For optimal force feedback and steering accuracy in ETS2:
+1. Open **Options $\rightarrow$ Controls** in ETS2.
+2. Set **Controller Subtype** to **Wheel**.
+3. Set **Steering Sensitivity** to 100% (middle position, linear 1:1 rotation).
+4. Set **Steering Non-Linearity** to 0% (slider all the way to the left).
+5. Ensure **Force Feedback** is **Checked / Enabled**.
+6. Whenever you adjust presets in the Web Studio, click **`🚀 1-Click Sync to ETS2`** to automatically calibrate all profiles and refresh the active DirectInput8 GUID.
 
 ---
 
