@@ -109,6 +109,20 @@ def patch_controls_sii(controls_path: Path, preset: dict, quiet: bool = False) -
                 lines[i] = new_line
                 updated = True
 
+        # 1b. Bind POV Hat Switch to interior camera look
+        if 'input j_look_ud `' in line:
+            idx = line.split(":")[0].strip()
+            new_line = f' {idx}: "input j_look_ud `joy.pov1_y`"'
+            if lines[i] != new_line:
+                lines[i] = new_line
+                updated = True
+        if 'input j_look_lr `' in line:
+            idx = line.split(":")[0].strip()
+            new_line = f' {idx}: "input j_look_lr `joy.pov1_x`"'
+            if lines[i] != new_line:
+                lines[i] = new_line
+                updated = True
+
         # 2. Patch FFB Constants: constant <c_ff_key> <float>
         for ffb_key, ffb_val in ffb_settings.items():
             pattern = f"constant {ffb_key} "

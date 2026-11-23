@@ -1472,6 +1472,7 @@
                     <div class="dpad-arrow left" id="dpad-left">◀</div>
                     <div class="dpad-arrow right" id="dpad-right">▶</div>
                   </div>
+                  <div id="dpad-status-badge" style="font-size: 8px; color: var(--dim); margin-top: 2px; font-weight: 700; text-align: center;">D-Pad: Center</div>
                   <!-- 3 Buttons Left -->
                   <div class="trio-buttons">
                     <div class="trio-btn" id="btn-l1" title="L1 / LB (Button 4)">
@@ -2907,24 +2908,102 @@ function updateLoop() {
   if (paddleL) padLEl.classList.add('active'); else padLEl.classList.remove('active');
   if (paddleR) padREl.classList.add('active'); else padREl.classList.remove('active');
 
-  // 6. Left Spoke D-Pad Arrows (Strictly digital Hat Switch - NEVER analog pedal axes!)
+  // 6. Left Spoke D-Pad Arrows (Universal Multi-Source Hat Switch & Button Decoder)
   let dUp = false;
   let dDown = false;
   let dLeft = false;
   let dRight = false;
+  let dpadSource = 'Centered';
 
-  // In macOS Chromium, the HID Hat Switch directions are appended as buttons 24-27
+  // Source A: Synthesized Gamepad API buttons (Buttons 24-27 or Standard 12-15)
   if (buttons.length >= 28) {
-    dUp = Boolean(buttons[24]?.pressed || (buttons[24]?.value && buttons[24].value > 0.5));
-    dDown = Boolean(buttons[25]?.pressed || (buttons[25]?.value && buttons[25].value > 0.5));
-    dLeft = Boolean(buttons[26]?.pressed || (buttons[26]?.value && buttons[26].value > 0.5));
-    dRight = Boolean(buttons[27]?.pressed || (buttons[27]?.value && buttons[27].value > 0.5));
+    if (buttons[24]?.pressed) dUp = true;
+    if (buttons[25]?.pressed) dDown = true;
+    if (buttons[26]?.pressed) dLeft = true;
+    if (buttons[27]?.pressed) dRight = true;
+    if (dUp || dDown || dLeft || dRight) dpadSource = 'Buttons 24-27';
+  } else if (activeGamepad && activeGamepad.mapping === 'standard' && buttons.length >= 16) {
+    if (buttons[12]?.pressed) dUp = true;
+    if (buttons[13]?.pressed) dDown = true;
+    if (buttons[14]?.pressed) dLeft = true;
+    if (buttons[15]?.pressed) dRight = true;
+    if (dUp || dDown || dLeft || dRight) dpadSource = 'Standard Buttons 12-15';
+  }
+
+  // Source B: Dedicated Hat Switch Axis (macOS Chromium maps Usage 57 to Axis 9: 57 - 48 = 9)
+  // Check candidate axes in order, STRICTLY excluding any pedal axis (Throttle, Brake, Clutch, Steer)
+  if (!dUp && !dDown && !dLeft && !dRight) {
+    const pedalAxes = new Set([0, config.throttleAxis, config.brakeAxis, config.clutchAxis]);
+    const candidateAxes = [9, 8, 7, 4, 3, 10].filter(i => !pedalAxes.has(i) && i < axes.length);
+
+    for (const ax of candidateAxes) {
+      const val = axes[ax];
+      // When pressed, a standard 8-way hat switch sits strictly within [-1.02, 1.02]
+      // When centered/released, it sits out-of-range (e.g. -1.2857 or 1.2857 or 3.28)
+      if (val >= -1.02 && val <= 1.02 && Math.abs(val) > 0.05) {
+        const tol = 0.065;
+        // Up (-1.000, -0.714, 1.000)
+        if (Math.abs(val - (-1.000)) < tol || Math.abs(val - (-0.714)) < tol || Math.abs(val - 1.000) < tol) {
+          dUp = true;
+        }
+        // Right (-0.714, -0.429, -0.143)
+        if (Math.abs(val - (-0.714)) < tol || Math.abs(val - (-0.429)) < tol || Math.abs(val - (-0.143)) < tol) {
+          dRight = true;
+        }
+        // Down (-0.143, 0.143, 0.429)
+        if (Math.abs(val - (-0.143)) < tol || Math.abs(val - 0.143) < tol || Math.abs(val - 0.429) < tol) {
+          dDown = true;
+        }
+        // Left (0.429, 0.714, 1.000)
+        if (Math.abs(val - 0.429) < tol || Math.abs(val - 0.714) < tol || Math.abs(val - 1.000) < tol) {
+          dLeft = true;
+        }
+
+        if (dUp || dDown || dLeft || dRight) {
+          dpadSource = `Axis ${ax} (${val.toFixed(2)})`;
+          break;
+        }
+      }
+    }
+  }
+
+  // Source C: 2-Axis POV Pair (POV X and POV Y)
+  if (!dUp && !dDown && !dLeft && !dRight) {
+    const pedalAxes = new Set([0, config.throttleAxis, config.brakeAxis, config.clutchAxis]);
+    for (const [xAx, yAx] of [[9, 10], [7, 8]]) {
+      if (xAx < axes.length && yAx < axes.length && !pedalAxes.has(xAx) && !pedalAxes.has(yAx)) {
+        const xVal = axes[xAx];
+        const yVal = axes[yAx];
+        if (Math.abs(xVal) > 0.5 || Math.abs(yVal) > 0.5) {
+          if (yVal < -0.5) dUp = true;
+          if (yVal > 0.5) dDown = true;
+          if (xVal < -0.5) dLeft = true;
+          if (xVal > 0.5) dRight = true;
+          if (dUp || dDown || dLeft || dRight) {
+            dpadSource = `POV Axes ${xAx},${yAx}`;
+            break;
+          }
+        }
+      }
+    }
   }
 
   setBtnClass('dpad-up', dUp);
   setBtnClass('dpad-down', dDown);
   setBtnClass('dpad-left', dLeft);
   setBtnClass('dpad-right', dRight);
+
+  const dpadStatusEl = document.getElementById('dpad-status-badge');
+  if (dpadStatusEl) {
+    if (dUp || dDown || dLeft || dRight) {
+      const dirText = [dUp ? '▲' : '', dDown ? '▼' : '', dLeft ? '◀' : '', dRight ? '▶' : ''].filter(Boolean).join(' ');
+      dpadStatusEl.textContent = `${dirText} (${dpadSource})`;
+      dpadStatusEl.style.color = '#55efc4';
+    } else {
+      dpadStatusEl.textContent = 'D-Pad: Center';
+      dpadStatusEl.style.color = 'var(--dim)';
+    }
+  }
 
   // ── 4. GEAR SHIFTER & PARKING BRAKE DETECTION ──
   // Parking / Handbrake (Strictly Button 15 - user confirmed)
