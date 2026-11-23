@@ -32,17 +32,17 @@ DEFAULT_BINDINGS = {
 
 DEFAULT_FFB = {
     "c_ff_enabled": 1.0,
-    "c_ff_gain": 8.0,
-    "c_ff_hi_spd": 1.4,
-    "c_ff_lo_spd": 0.8,
-    "c_ff_fricton": 0.75,
-    "c_ff_engine": 0.35,
-    "c_ff_surface": 0.30,
-    "c_ff_bumps": 0.85,
-    "c_ff_collis": 1.0,
-    "c_ff_gearbox": 0.35,
-    "c_ff_undrstr": 0.65,
-    "c_ff_assist": 0.45,
+    "c_ff_gain": 1.6,
+    "c_ff_hi_spd": 0.35,
+    "c_ff_lo_spd": 0.15,
+    "c_ff_fricton": 0.06,
+    "c_ff_engine": 0.25,
+    "c_ff_surface": 0.20,
+    "c_ff_bumps": 0.65,
+    "c_ff_collis": 0.75,
+    "c_ff_gearbox": 0.25,
+    "c_ff_undrstr": 0.45,
+    "c_ff_assist": 0.88,
 }
 
 
