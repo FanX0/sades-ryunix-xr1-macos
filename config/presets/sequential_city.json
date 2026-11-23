@@ -4,28 +4,34 @@
   "name": "ETS2 Sequential & City Transit",
   "author": "FanX",
   "game": "Euro Truck Simulator 2",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Configured for sequential paddle shifting (B1/B2) and automatic transmission with light steering assist for dense city traffic.",
   "tags": ["ETS2", "Sequential", "Automatic", "Paddles", "City"],
+  "easy_settings": {
+    "strength": 60,
+    "centering": 50,
+    "weight": 30,
+    "vibration": 40
+  },
   "ffb": {
     "c_ff_enabled": 1.0,
-    "c_ff_gain": 4.5,
-    "c_ff_hi_spd": 0.9,
-    "c_ff_lo_spd": 0.35,
-    "c_ff_fricton": 0.3,
-    "c_ff_engine": 0.2,
+    "c_ff_gain": 6.8,
+    "c_ff_hi_spd": 1.25,
+    "c_ff_lo_spd": 0.70,
+    "c_ff_fricton": 0.35,
+    "c_ff_engine": 0.25,
     "c_ff_surface": 0.25,
-    "c_ff_bumps": 0.7,
-    "c_ff_collis": 0.9,
-    "c_ff_gearbox": 0.1,
-    "c_ff_undrstr": 0.45,
-    "c_ff_assist": 0.7
+    "c_ff_bumps": 0.75,
+    "c_ff_collis": 0.90,
+    "c_ff_gearbox": 0.15,
+    "c_ff_undrstr": 0.60,
+    "c_ff_assist": 0.80
   },
   "buttons": {
     "parkingbrake": "keyboard.space?0 | joy.b15?0",
     "gearboxhshifter": "0",
     "gearbox": "1",
-    "gearup": "keyboard.lshift?0 | joy.b1?0",
-    "geardown": "keyboard.lctrl?0 | joy.b2?0"
+    "gearup": "joy.b2?0",
+    "geardown": "joy.b1?0"
   }
 }
