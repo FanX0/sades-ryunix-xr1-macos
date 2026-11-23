@@ -178,6 +178,29 @@ def patch_controls_sii(controls_path: Path, preset: dict, active_device_joy: str
     ffb_settings = preset.get("ffb", {})
     button_bindings = preset.get("buttons", {})
 
+    # Normalize button_bindings aliases:
+    # ETS2 controls.sii uses 'gear1', 'gearsel1tgl', 'parkingbrake', etc.
+    normalized_buttons = {}
+    alias_map = {
+        "hshifter_gear1": "gear1",
+        "hshifter_gear2": "gear2",
+        "hshifter_gear3": "gear3",
+        "hshifter_gear4": "gear4",
+        "hshifter_gear5": "gear5",
+        "hshifter_gear6": "gear6",
+        "hshifter_gear_r": "gear7",
+        "hshifter_toggle1": "gearsel1tgl",
+        "hshifter_toggle2": "gearsel2tgl",
+    }
+    for k, v in button_bindings.items():
+        normalized_buttons[k] = v
+        if k in alias_map:
+            normalized_buttons[alias_map[k]] = v
+
+    # Also mirror gear7 to gearreverse for reverse gear compatibility
+    if "gear7" in normalized_buttons and "gearreverse" not in normalized_buttons:
+        normalized_buttons["gearreverse"] = normalized_buttons["gear7"]
+
     for i, line in enumerate(lines):
         # 1. Bind device joy to the active DirectInput8 GUID
         if 'device joy `' in line and 'config_lines[2]' in line:
@@ -212,8 +235,8 @@ def patch_controls_sii(controls_path: Path, preset: dict, active_device_joy: str
                     updated = True
 
         # 3. Patch Button Mixes: mix <button_key> `<val>`
-        for btn_key, btn_val in button_bindings.items():
-            pattern = f" mix {btn_key} `"
+        for btn_key, btn_val in normalized_buttons.items():
+            pattern = f'"mix {btn_key} `'
             if pattern in line:
                 idx = line.split(":")[0].strip()
                 new_line = f' {idx}: "mix {btn_key} `{btn_val}`"'
@@ -260,6 +283,12 @@ def main():
     parser = argparse.ArgumentParser(description="Configure ETS2 controls and FFB presets for Sades Ryunix XR1.")
     parser.add_argument("doc_dir", nargs="?", default=str(Path.home() / "Documents/Euro Truck Simulator 2"), help="ETS2 Documents path")
     parser.add_argument("--preset", "-p", default="", help="Preset ID, file path, or JSON string")
+    parser.add_argument(
+        "--shifter-layout",
+        choices=["6plusR", "5plusR"],
+        default="6plusR",
+        help="Shifter pattern layout (6plusR or 5plusR)",
+    )
     parser.add_argument("--json", action="store_true", help="Output JSON result for API consumption")
 
     args = parser.parse_args()
@@ -267,6 +296,11 @@ def main():
     repo_root = Path(__file__).resolve().parent.parent
     doc_path = Path(args.doc_dir).resolve()
     preset_data = load_preset(args.preset, repo_root)
+
+    if args.shifter_layout == "5plusR":
+        preset_data.setdefault("buttons", {})
+        preset_data["buttons"]["hshifter_gear6"] = ""
+        preset_data["buttons"]["hshifter_gear_r"] = "joy.b21?0"
 
     configured_profiles = scan_and_configure_ets2(doc_path, preset_data, quiet=args.json)
 

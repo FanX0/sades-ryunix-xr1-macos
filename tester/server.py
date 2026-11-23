@@ -108,9 +108,10 @@ class StudioHandler(http.server.SimpleHTTPRequestHandler):
                 body = self.read_json_body()
                 preset_id = body.get("preset_id", "")
                 preset_data = body.get("preset_data")
+                shifter_layout = body.get("shifter_layout", "6plusR")
 
                 config_script = REPO_ROOT / "bin/configure_ets2.py"
-                cmd = [sys.executable, str(config_script), "--json"]
+                cmd = [sys.executable, str(config_script), "--json", "--shifter-layout", shifter_layout]
 
                 if preset_data and isinstance(preset_data, dict):
                     cmd.extend(["--preset", json.dumps(preset_data)])

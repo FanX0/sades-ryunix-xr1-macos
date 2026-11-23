@@ -823,8 +823,7 @@
   .gate-slot-pos[data-g="5"] { top: 12px; right: 16px; }
   .gate-slot-pos[data-g="2"] { bottom: 12px; left: 16px; }
   .gate-slot-pos[data-g="4"] { bottom: 12px; left: calc(50% - 13px); }
-  .gate-slot-pos[data-g="6"] { bottom: 12px; right: 16px; }
-  .gate-slot-pos[data-g="R"] { bottom: 12px; right: -6px; display: none; } /* alternate */
+  .gate-slot-pos[data-g="6"], .gate-slot-pos[data-g="R"] { bottom: 12px; right: 16px; }
 
   .gate-slot-pos.engaged {
     background: var(--green) !important;
@@ -1831,11 +1830,11 @@
   <!-- RIGHT COLUMN: SHIFTER, RAW AXES & BUTTON MATRIX -->
   <div class="cockpit-col">
 
-    <!-- 6+1 H-PATTERN GEAR SHIFTER -->
+    <!-- 6-SPEED H-PATTERN GEAR SHIFTER -->
     <div class="card">
       <div class="card-title">
-        <span>⚙️ 6+1 H-Pattern Shifter</span>
-        <span class="tag">Manual Transmission</span>
+        <span>⚙️ 6-Speed H-Pattern Shifter</span>
+        <span class="tag" id="shifter-mode-badge">6+R (Push-Down)</span>
       </div>
 
       <div class="shifter-module">
@@ -1847,8 +1846,7 @@
           <div class="gate-slot-pos" data-g="5">5</div>
           <div class="gate-slot-pos" data-g="2">2</div>
           <div class="gate-slot-pos" data-g="4">4</div>
-          <div class="gate-slot-pos" data-g="6">6</div>
-          <div class="gate-slot-pos" data-g="R" style="display: flex; right: -8px; border-color: #ff6b6b; color: #ff6b6b;">R</div>
+          <div class="gate-slot-pos" data-g="6" id="gate-slot-6">6</div>
         </div>
 
         <!-- Gear Info & Shifter Buttons -->
@@ -1865,6 +1863,15 @@
           <div class="gear-aux-buttons">
             <div class="aux-btn" id="shifter-lohi" style="font-weight: 800;">⚡ Range: LOW (B23)</div>
             <div class="aux-btn" id="shifter-handbrake" style="font-weight: 800;">🅿 Handbrake (B15)</div>
+          </div>
+
+          <!-- Shifter Layout: 6+R vs 5+R -->
+          <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 11px; color: var(--dim);">Gate Pattern:</span>
+            <select class="pedal-select" id="shifter-layout" onchange="setShifterLayout(this.value)">
+              <option value="6plusR" selected>6+R (Push-Down R) — 12-Spd Truck</option>
+              <option value="5plusR">5+R (Slot 6 = Reverse) — 5-Spd Car</option>
+            </select>
           </div>
 
           <!-- Shifter Calibration dropdown -->
@@ -2012,12 +2019,15 @@
             </div>
 
             <!-- Easy Mode Action Buttons -->
-            <div style="display: flex; gap: 10px; margin-top: 18px;">
-              <button class="overlay-btn" style="flex: 1.2; border-radius: 12px; padding: 12px;" onclick="syncFFBToETS2()">
-                🚀 1-Click Sync to ETS2
+            <div style="display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap;">
+              <button class="overlay-btn" style="flex: 1.2; min-width: 200px; border-radius: 12px; padding: 12px;" onclick="syncFFBToETS2()">
+                🚀 1-Click Sync to ETS2 &amp; Wheel
               </button>
-              <button class="haptic-btn" style="flex: 1; border-radius: 12px; padding: 12px;" onclick="testEasyFFBFeel()">
+              <button class="haptic-btn" style="flex: 1; min-width: 170px; border-radius: 12px; padding: 12px;" onclick="testEasyFFBFeel()">
                 🎯 Feel Wheel in Hand
+              </button>
+              <button class="haptic-btn" id="btn-live-feel" style="flex: 1; min-width: 170px; border-radius: 12px; padding: 12px; border-color: rgba(30, 144, 255, 0.4);" onclick="toggleLiveWheelFeel()">
+                🛞 Live Wheel Feel: OFF
               </button>
             </div>
           </div>
@@ -2444,6 +2454,8 @@ function switchFFBMode(mode) {
   }
 }
 
+let currentActivePresetName = 'Smooth Cruiser';
+
 function selectEasyPreset(key) {
   const p = EASY_PRESETS[key];
   if (!p) return;
@@ -2451,10 +2463,24 @@ function selectEasyPreset(key) {
   const card = document.getElementById(`card-preset-${key}`);
   if (card) card.classList.add('active');
 
+  const names = {
+    cruiser: 'Smooth Cruiser',
+    featherlight: 'Featherlight EPS',
+    heavy: 'Heavy Haul Truck',
+    racing: 'Track & GT Racing',
+    drift: 'Drift & Agile'
+  };
+  currentActivePresetName = names[key] || key;
+
   currentEasySettings = { ...p };
   applyEasyToUI();
   calculateAdvancedFromEasy();
-  showToast(`⚡ Selected ${key.toUpperCase()} Profile`);
+
+  // If WebHID is connected, update hardware actuator gain immediately
+  if (hidDevice && hidDevice.opened) {
+    armHardwareActuators();
+  }
+  showToast(`⚡ Selected ${currentActivePresetName}`);
 }
 
 function updateEasySlider(param, value) {
@@ -2534,44 +2560,112 @@ function calculateEasyFromAdvanced() {
   applyEasyToUI();
 }
 
+let liveWheelFeelActive = false;
+
+function toggleLiveWheelFeel() {
+  liveWheelFeelActive = !liveWheelFeelActive;
+  const btn = document.getElementById('btn-live-feel');
+  if (liveWheelFeelActive) {
+    if (!hidDevice || !hidDevice.opened) {
+      showToast('🔌 Requesting WebHID USB to activate Live Wheel Feel...');
+      connectWebHID().then(() => {
+        if (hidDevice && hidDevice.opened) {
+          armHardwareActuators();
+          if (btn) {
+            btn.innerHTML = '🛞 Live Wheel Feel: <span style="color:#2ed573;">ACTIVE</span>';
+            btn.style.borderColor = '#2ed573';
+          }
+          showToast('🟢 Live Wheel Feel ACTIVE! Turn the wheel with your hands to feel resistance.');
+        } else {
+          liveWheelFeelActive = false;
+          if (btn) btn.textContent = '🛞 Live Wheel Feel: OFF';
+        }
+      });
+      return;
+    }
+    armHardwareActuators();
+    if (btn) {
+      btn.innerHTML = '🛞 Live Wheel Feel: <span style="color:#2ed573;">ACTIVE</span>';
+      btn.style.borderColor = '#2ed573';
+    }
+    showToast('🟢 Live Wheel Feel ACTIVE! Turn the wheel with your hands to feel resistance.');
+  } else {
+    if (btn) {
+      btn.textContent = '🛞 Live Wheel Feel: OFF';
+      btn.style.borderColor = 'rgba(30, 144, 255, 0.4)';
+    }
+    sendConstantForce(0);
+    showToast('⚪ Live Wheel Feel deactivated.');
+  }
+}
+
 async function testEasyFFBFeel() {
   const strength = currentEasySettings.strength / 100;
   const centering = currentEasySettings.centering / 100;
   const weight = currentEasySettings.weight / 100;
   const vibration = currentEasySettings.vibration / 100;
 
-  animateHapticPulse(vibration, strength, 1200);
+  animateHapticPulse(vibration, strength, 1600);
 
-  if (hidDevice && hidDevice.opened) {
-    showToast(`🎯 Testing Easy FFB: Strength ${currentEasySettings.strength}%, Centering ${currentEasySettings.centering}%`);
-    const pullMag = Math.round(strength * (1500 + centering * 3500));
-    const startTime = Date.now();
-    let sign = 1;
-    if (hidRumbleInterval) clearInterval(hidRumbleInterval);
-    hidRumbleInterval = setInterval(async () => {
-      const elapsed = Date.now() - startTime;
-      if (elapsed > 1200) {
-        clearInterval(hidRumbleInterval);
-        hidRumbleInterval = null;
-        await sendConstantForce(0);
-        return;
-      }
-      try {
-        if (elapsed < 400) {
-          await sendConstantForce(-pullMag);
-        } else if (elapsed < 800) {
-          await sendConstantForce(pullMag);
-        } else {
-          sign = -sign;
-          const vibForce = Math.round(sign * vibration * 4000);
-          const centerSpring = Math.round(Math.sin(elapsed * 0.05) * pullMag * 0.5);
-          await sendConstantForce(centerSpring + vibForce);
-        }
-      } catch(e) {}
-    }, 25);
-  } else {
-    showToast(`🎯 Testing simulated feel (Connect WebHID above to feel physical wheel torque)`);
+  // If WebHID is not open, automatically request connection!
+  if (!hidDevice || !hidDevice.opened) {
+    showToast('🔌 Requesting WebHID USB connection for Ryunix XR1...');
+    await connectWebHID();
+    if (!hidDevice || !hidDevice.opened) {
+      showToast('⚠️ WebHID device not connected. Click "Connect WebHID" at top.', 'error');
+      return;
+    }
   }
+
+  // Ensure actuators are awake and gain is synced
+  await armHardwareActuators();
+
+  showToast(`🎯 Testing ${currentActivePresetName}: Strength ${currentEasySettings.strength}%, Centering ${currentEasySettings.centering}%, Weight ${currentEasySettings.weight}%`);
+
+  // Calculate preset-specific resistance:
+  // Weight heavily influences basePull & turn-in resistance (simulating hydraulic inertia)
+  const isHeavy = weight > 0.45;
+  const basePull = Math.round(1200 + centering * 3500 + weight * 2800);
+  const pullMag = Math.round(strength * basePull);
+
+  // Frequency varies by vehicle character:
+  // Heavy truck: deep 20Hz diesel shudder
+  // Cruiser/Racing: crisper, higher frequency
+  const vibFreq = isHeavy ? 0.035 : 0.075;
+  const vibMagnitude = Math.round(vibration * (isHeavy ? 4500 : 3200));
+
+  const startTime = Date.now();
+  let sign = 1;
+
+  if (hidRumbleInterval) clearInterval(hidRumbleInterval);
+
+  hidRumbleInterval = setInterval(async () => {
+    const elapsed = Date.now() - startTime;
+    if (elapsed > 1600) {
+      clearInterval(hidRumbleInterval);
+      hidRumbleInterval = null;
+      await sendConstantForce(0);
+      showToast('✅ Wheel feel test completed.');
+      return;
+    }
+    try {
+      if (elapsed < 500) {
+        // Phase 1: Progressive ramp pull left (steering rack resistance)
+        const ramp = Math.min(1.0, elapsed / 250);
+        await sendConstantForce(Math.round(-pullMag * ramp));
+      } else if (elapsed < 1000) {
+        // Phase 2: Centering snap-back & pull right
+        const ramp = Math.min(1.0, (elapsed - 500) / 250);
+        await sendConstantForce(Math.round(pullMag * ramp));
+      } else {
+        // Phase 3: Centering spring + engine/surface resonance
+        sign = -sign;
+        const vib = Math.round(sign * vibMagnitude);
+        const center = Math.round(Math.sin((elapsed - 1000) * vibFreq) * pullMag * 0.45);
+        await sendConstantForce(center + vib);
+      }
+    } catch(e) {}
+  }, 25);
 }
 
 let currentTab = 'diag';
@@ -2607,13 +2701,20 @@ function resetFFBDefaults() {
 
 async function syncFFBToETS2() {
   showToast('⏳ Syncing FFB to ETS2 player profiles...');
+  
+  // Also arm hardware actuators and sync device gain
+  if (hidDevice && hidDevice.opened) {
+    await armHardwareActuators();
+  }
+
   try {
     const res = await fetch('/api/presets/apply', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        shifter_layout: config.shifterLayout || '6plusR',
         preset_data: {
-          name: 'Custom Web Calibration',
+          name: currentActivePresetName || 'Custom Web Calibration',
           ffb: currentFFB,
           buttons: {
             parkingbrake: 'keyboard.space?0 | joy.b15?0',
@@ -2625,8 +2726,8 @@ async function syncFFBToETS2() {
             hshifter_gear3: 'joy.b18?0',
             hshifter_gear4: 'joy.b19?0',
             hshifter_gear5: 'joy.b20?0',
-            hshifter_gear6: 'joy.b21?0',
-            hshifter_gear_r: 'joy.b22?0'
+            hshifter_gear6: config.shifterLayout === '5plusR' ? '' : 'joy.b21?0',
+            hshifter_gear_r: config.shifterLayout === '5plusR' ? 'joy.b21?0' : 'joy.b22?0'
           }
         }
       })
@@ -2881,6 +2982,26 @@ function updateWebHIDBadge(connected) {
   }
 }
 
+let hidEffectRunning = false;
+
+async function armHardwareActuators(forceGain) {
+  if (!hidDevice || !hidDevice.opened) return false;
+  try {
+    // Report 12 (0x0C): Device Control (Byte 0 = 1: Enable Actuators)
+    await hidDevice.sendReport(12, new Uint8Array([1]));
+    
+    // Report 13 (0x0D): Device Gain
+    const S = currentEasySettings.strength / 100;
+    const gainVal = forceGain !== undefined ? forceGain : Math.round(Math.max(40, Math.min(255, (0.25 + S * 0.75) * 255)));
+    await hidDevice.sendReport(13, new Uint8Array([gainVal]));
+    hidActuatorsEnabled = true;
+    return true;
+  } catch(e) {
+    console.warn('Failed to arm hardware actuators:', e);
+    return false;
+  }
+}
+
 async function sendConstantForce(magnitude) {
   if (!hidDevice || !hidDevice.opened) return;
   // Clamp magnitude between -10000 and 10000 (16-bit signed PID range)
@@ -2892,10 +3013,21 @@ async function sendConstantForce(magnitude) {
     // Report ID 5: [EffectBlockIndex, MagLow, MagHigh]
     await hidDevice.sendReport(5, new Uint8Array([1, lowByte, highByte]));
     if (magnitude !== 0) {
-      // Report ID 10: [EffectBlockIndex, Op=1 (Start), Loop=1]
-      await hidDevice.sendReport(10, new Uint8Array([1, 1, 1]));
+      if (!hidEffectRunning) {
+        // Start effect once (Op=1, Loop=1)
+        await hidDevice.sendReport(10, new Uint8Array([1, 1, 1]));
+        hidEffectRunning = true;
+      }
+    } else {
+      if (hidEffectRunning) {
+        // Stop effect cleanly (Op=2)
+        await hidDevice.sendReport(10, new Uint8Array([1, 2, 0]));
+        hidEffectRunning = false;
+      }
     }
-  } catch(e) {}
+  } catch(e) {
+    hidEffectRunning = false;
+  }
 }
 
 async function executeWebHIDEffect(type, duration) {
@@ -3420,6 +3552,7 @@ let config = {
   clutchAxis: 6,   // Slider axis (confirmed by user!)
   clutchInv: false,
   shifterMode: 'exact',
+  shifterLayout: '6plusR', // '6plusR' (6-speed + push-down R) or '5plusR' (slot 6 = R)
   gearMap: {
     1: 16,
     2: 17,
@@ -3476,6 +3609,39 @@ try {
   if (saved) Object.assign(config, JSON.parse(saved));
 } catch(e) {}
 
+function setShifterLayout(layout) {
+  config.shifterLayout = layout;
+  const slot6 = document.getElementById('gate-slot-6');
+  const badge = document.getElementById('shifter-mode-badge');
+  const sel = document.getElementById('shifter-layout');
+  if (sel) sel.value = layout;
+
+  if (layout === '5plusR') {
+    if (slot6) {
+      slot6.textContent = 'R';
+      slot6.setAttribute('data-g', 'R');
+      slot6.style.borderColor = '#ff7675';
+      slot6.style.color = '#ff7675';
+    }
+    if (badge) badge.textContent = '5+R (Direct R)';
+    config.gearMap[6] = null;
+    config.gearMap.R = 21;
+    showToast('⚙️ Shifter Pattern: 5+R Mode (Slot 6 is Reverse)');
+  } else {
+    if (slot6) {
+      slot6.textContent = '6';
+      slot6.setAttribute('data-g', '6');
+      slot6.style.borderColor = '';
+      slot6.style.color = '';
+    }
+    if (badge) badge.textContent = '6+R (Push-Down)';
+    config.gearMap[6] = 21;
+    config.gearMap.R = 22;
+    showToast('⚙️ Shifter Pattern: 6+R Mode (Push-Down for Reverse)');
+  }
+  try { localStorage.setItem('xr1_config_v2', JSON.stringify(config)); } catch(e) {}
+}
+
 function saveConfig() {
   config.throttleAxis = parseInt(document.getElementById('throttle-axis-sel').value);
   config.throttleInv = document.getElementById('throttle-inv').checked;
@@ -3483,6 +3649,8 @@ function saveConfig() {
   config.brakeInv = document.getElementById('brake-inv').checked;
   config.clutchAxis = parseInt(document.getElementById('clutch-axis-sel').value);
   config.clutchInv = document.getElementById('clutch-inv').checked;
+  const layoutSel = document.getElementById('shifter-layout');
+  if (layoutSel) config.shifterLayout = layoutSel.value;
   try { localStorage.setItem('xr1_config_v2', JSON.stringify(config)); } catch(e) {}
 }
 
@@ -3495,6 +3663,13 @@ function syncConfigUI() {
   document.getElementById('clutch-inv').checked = config.clutchInv;
   const dz = document.getElementById('deadzone-sel');
   if (dz) dz.value = steerDeadzone.toFixed(1);
+
+  const layoutSel = document.getElementById('shifter-layout');
+  if (layoutSel) {
+    const layout = config.shifterLayout || '6plusR';
+    layoutSel.value = layout;
+    setShifterLayout(layout);
+  }
 }
 
 function applyShifterPreset(preset) {
@@ -3505,9 +3680,15 @@ function applyShifterPreset(preset) {
   else if (preset === 'base16') base = 16;
 
   if (preset !== 'auto') {
-    config.gearMap = {
-      1: base, 2: base+1, 3: base+2, 4: base+3, 5: base+4, 6: base+5, R: base+6
-    };
+    if (config.shifterLayout === '5plusR') {
+      config.gearMap = {
+        1: base, 2: base+1, 3: base+2, 4: base+3, 5: base+4, 6: null, R: base+5
+      };
+    } else {
+      config.gearMap = {
+        1: base, 2: base+1, 3: base+2, 4: base+3, 5: base+4, 6: base+5, R: base+6
+      };
+    }
   }
   saveConfig();
 }
@@ -3692,6 +3873,21 @@ function updateLoop() {
       degEl.textContent = `+${absDeg}°`;
       dirEl.textContent = 'RIGHT ▶';
       dirEl.style.color = 'var(--accent)';
+    }
+
+    // ── LIVE WHEEL FEEL (Active Real-Time Hand Resistance) ──
+    if (liveWheelFeelActive && hidDevice && hidDevice.opened && !hidRumbleInterval) {
+      const S = currentEasySettings.strength / 100;
+      const C = currentEasySettings.centering / 100;
+      const W = currentEasySettings.weight / 100;
+      const V = currentEasySettings.vibration / 100;
+
+      // Dynamic centering spring torque pulling back to 0°
+      const springPull = -Math.sign(steerDeg) * Math.min(8500, Math.pow(Math.abs(steerDeg) / 45, 1.15) * (C * 2200 + W * 1800 + 500));
+      // Subtle diesel engine idle vibration
+      const engineVib = Math.round(Math.sin(Date.now() * 0.04) * V * 500);
+      const liveTotal = Math.round(S * (springPull + engineVib));
+      sendConstantForce(liveTotal);
     }
   }
 
@@ -3959,15 +4155,20 @@ function updateLoop() {
     s.classList.remove('reverse-engaged');
   });
 
-  // Check confirmed gearMap: 1:16, 2:17, 3:18, 4:19, 5:20, 6:21, R:22
+  // Check confirmed gearMap
   for (const [gear, btnIdx] of Object.entries(config.gearMap)) {
-    if (buttons[btnIdx]?.pressed || (buttons[btnIdx]?.value && buttons[btnIdx].value > 0.5)) {
+    if (btnIdx !== null && btnIdx !== undefined && (buttons[btnIdx]?.pressed || (buttons[btnIdx]?.value && buttons[btnIdx].value > 0.5))) {
       activeGear = gear;
       break;
     }
   }
 
-  // If Reverse is engaged via Button 22
+  // Reverse detection: Button 22 (or Button 21 in 5+R mode)
+  if (config.shifterLayout === '5plusR') {
+    if (buttons[21]?.pressed || (buttons[21]?.value && buttons[21].value > 0.5)) {
+      activeGear = 'R';
+    }
+  }
   if (buttons[22]?.pressed || (buttons[22]?.value && buttons[22].value > 0.5)) {
     activeGear = 'R';
   }
@@ -3975,8 +4176,10 @@ function updateLoop() {
   // Update Shifter UI
   const gearCircle = document.getElementById('gear-circle');
   const gearName = document.getElementById('gear-name');
+  const slot6 = document.getElementById('gate-slot-6');
 
   if (activeGear === 'N') {
+    if (slot6) slot6.textContent = config.shifterLayout === '5plusR' ? 'R' : '6';
     if (isParked) {
       gearCircle.className = 'gear-circle in-rev';
       gearCircle.textContent = 'P';
@@ -3989,13 +4192,18 @@ function updateLoop() {
       gearName.style.color = '#fff';
     }
   } else if (activeGear === 'R') {
+    if (slot6) {
+      slot6.textContent = 'R';
+      slot6.classList.add('reverse-engaged');
+    }
     gearCircle.className = 'gear-circle in-rev';
     gearCircle.textContent = 'R';
     gearName.textContent = isParked ? 'Reverse (Handbrake ON!)' : 'Reverse (R)';
     gearName.style.color = isParked ? '#ff6b81' : '#fff';
-    const rSlot = document.querySelector(`.gate-slot-pos[data-g="R"]`);
-    if (rSlot) rSlot.classList.add('reverse-engaged');
   } else {
+    if (slot6 && config.shifterLayout !== '5plusR') {
+      slot6.textContent = '6';
+    }
     gearCircle.className = 'gear-circle in-gear';
     const num = parseInt(activeGear);
     const effGear = (isLoHi && !isNaN(num)) ? (num + 6) : num;
