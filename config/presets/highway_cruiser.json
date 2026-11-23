@@ -1,0 +1,37 @@
+{
+  "schema": "xr1-preset.v1",
+  "id": "highway_cruiser",
+  "name": "ETS2 Smooth Highway Cruiser",
+  "author": "FanX",
+  "game": "Euro Truck Simulator 2",
+  "version": "1.0.0",
+  "description": "Relaxed steering, soft centering, smooth friction, and gentle vibration for effortless long-distance hauls.",
+  "tags": ["ETS2", "Cruiser", "Comfort", "H-Shifter"],
+  "ffb": {
+    "c_ff_enabled": 1.0,
+    "c_ff_gain": 4.0,
+    "c_ff_hi_spd": 0.8,
+    "c_ff_lo_spd": 0.4,
+    "c_ff_fricton": 0.35,
+    "c_ff_engine": 0.15,
+    "c_ff_surface": 0.2,
+    "c_ff_bumps": 0.6,
+    "c_ff_collis": 0.8,
+    "c_ff_gearbox": 0.2,
+    "c_ff_undrstr": 0.4,
+    "c_ff_assist": 0.65
+  },
+  "buttons": {
+    "parkingbrake": "keyboard.space?0 | joy.b15?0",
+    "gearboxhshifter": "1",
+    "gearbox": "2",
+    "hshifter_toggle1": "joy.b23?0",
+    "hshifter_gear1": "joy.b16?0",
+    "hshifter_gear2": "joy.b17?0",
+    "hshifter_gear3": "joy.b18?0",
+    "hshifter_gear4": "joy.b19?0",
+    "hshifter_gear5": "joy.b20?0",
+    "hshifter_gear6": "joy.b21?0",
+    "hshifter_gear_r": "joy.b22?0"
+  }
+}
