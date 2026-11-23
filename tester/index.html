@@ -982,6 +982,204 @@
   @media (max-width: 980px) {
     .main-container { grid-template-columns: 1fr; }
   }
+
+  /* ══════════════════════════════════════════════
+     NAVIGATION TABS & FFB STUDIO STYLING
+     ══════════════════════════════════════════════ */
+  .nav-tabs {
+    display: flex;
+    gap: 8px;
+    background: rgba(0,0,0,0.45);
+    padding: 5px;
+    border-radius: 25px;
+    border: 1px solid var(--border);
+  }
+
+  .nav-tab {
+    background: transparent;
+    border: none;
+    color: var(--dim);
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .nav-tab:hover {
+    color: var(--text);
+    background: rgba(255,255,255,0.06);
+  }
+
+  .nav-tab.active {
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), #4834d4);
+    box-shadow: 0 4px 15px var(--accent-glow);
+  }
+
+  .tab-view {
+    display: none;
+    width: 100%;
+  }
+
+  .tab-view.active {
+    display: contents;
+  }
+
+  /* FFB Sliders Layout */
+  .ffb-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .ffb-slider-row {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+  }
+
+  .ffb-slider-row:hover {
+    border-color: var(--accent);
+  }
+
+  .ffb-slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .ffb-slider-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .ffb-slider-val {
+    font-size: 12px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(108, 92, 231, 0.2);
+    color: var(--accent2);
+    font-family: monospace;
+  }
+
+  .ffb-slider-desc {
+    font-size: 11px;
+    color: var(--dim);
+    margin-bottom: 8px;
+  }
+
+  .ffb-range {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #232538;
+    outline: none;
+    -webkit-appearance: none;
+  }
+
+  .ffb-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent2);
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--accent2);
+    transition: transform 0.1s;
+  }
+
+  .ffb-range::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+
+  /* Haptics Test Grid */
+  .haptic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .haptic-btn {
+    background: #181926;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 10px;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+
+  .haptic-btn:hover {
+    border-color: var(--accent2);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 206, 201, 0.2);
+  }
+
+  .haptic-btn.active-pulse {
+    border-color: var(--red);
+    background: rgba(255, 71, 87, 0.15);
+    box-shadow: 0 0 20px var(--red-glow);
+    animation: hapticVibe 0.1s infinite alternate;
+  }
+
+  @keyframes hapticVibe {
+    0% { transform: translate(-2px, 1px) scale(0.98); }
+    100% { transform: translate(2px, -1px) scale(1.02); }
+  }
+
+  .haptic-icon {
+    font-size: 24px;
+  }
+
+  /* Toast notification */
+  #toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .toast {
+    background: #1e1f2f;
+    border: 1px solid var(--accent);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: toastIn 0.3s cubic-bezier(0.1, 1, 0.1, 1);
+  }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 </style>
 </head>
 <body>
@@ -996,19 +1194,29 @@
 </div>
 
 <header>
-  <h1>🏎️ Sades Ryunix XR1 Studio <span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #2ed573; color: #000; font-weight: 800; vertical-align: middle;">v3.0 CALIBRATED</span></h1>
-  <div>
-    <div class="status-badge">
-      <div class="status-dot" id="status-dot"></div>
-      <span id="status-text" style="font-weight: 600;">Waiting for controller...</span>
+  <div style="display: flex; align-items: center; justify-content: space-between; max-width: 1320px; margin: 0 auto; width: 100%; flex-wrap: wrap; gap: 12px;">
+    <h1>🏎️ Sades Ryunix XR1 Studio <span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #2ed573; color: #000; font-weight: 800; vertical-align: middle;">v3.0 CALIBRATED</span></h1>
+    
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tab-btn-diag" onclick="switchTab('diag')">🎮 Diagnostics</button>
+      <button class="nav-tab" id="tab-btn-ffb" onclick="switchTab('ffb')">⚡ Force Feedback</button>
+      <button class="nav-tab" id="tab-btn-presets" onclick="switchTab('presets')">🌐 Preset Hub</button>
+    </div>
+
+    <div>
+      <div class="status-badge">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text" style="font-weight: 600;">Waiting for controller...</span>
+      </div>
     </div>
   </div>
 </header>
 
 <div class="main-container">
 
-  <!-- LEFT COLUMN: WHEEL & BUTTON VISUALIZER -->
-  <div style="display: flex; flex-direction: column; gap: 20px;">
+  <!-- TAB VIEW 1: DIAGNOSTICS & HARDWARE VISUALIZER -->
+  <div id="view-diag" class="tab-view active">
+  <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px; width: 100%;">
 
     <!-- STEERING WHEEL WITH BUTTONS -->
     <div class="card">
@@ -1311,9 +1519,449 @@
 
   </div>
 
-</div>
+  </div> <!-- closes grid -->
+  </div> <!-- closes view-diag -->
+
+  <!-- ══════════════════════════════════════════════
+       TAB VIEW 2: FORCE FEEDBACK (FFB) STUDIO
+       ══════════════════════════════════════════════ -->
+  <div id="view-ffb" class="tab-view">
+    <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px; width: 100%;">
+      
+      <!-- LEFT: FFB PARAMETERS SLIDERS -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="card">
+          <div class="card-title">
+            <span>⚡ Force Feedback Tuning Studio</span>
+            <span class="tag">DirectInput 8 / ETS2</span>
+          </div>
+          <p style="font-size: 12px; color: var(--dim); margin-bottom: 16px;">
+            Fine-tune physical motor resistance, dynamic centering torque, and road rumble effects for the Sades Ryunix XR1 steering wheel.
+          </p>
+
+          <!-- Group 1: Master Torque & Resistance -->
+          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent2); font-weight: 800; margin-bottom: 10px;">
+            1. Master Torque &amp; Internal Resistance
+          </div>
+          <div class="ffb-slider-row">
+            <div class="ffb-slider-header">
+              <span class="ffb-slider-title">Overall Force Gain (c_ff_gain)</span>
+              <span class="ffb-slider-val" id="val-ff-gain">5.00</span>
+            </div>
+            <div class="ffb-slider-desc">Master multiplier for all wheel motors and resistance effects.</div>
+            <input type="range" class="ffb-range" id="rng-ff-gain" min="0" max="10" step="0.1" value="5.0" oninput="updateFFBValue('c_ff_gain', this.value)">
+          </div>
+
+          <div class="ffb-slider-row">
+            <div class="ffb-slider-header">
+              <span class="ffb-slider-title">Internal Friction &amp; Damping (c_ff_fricton)</span>
+              <span class="ffb-slider-val" id="val-ff-fricton">0.50</span>
+            </div>
+            <div class="ffb-slider-desc">Simulates mechanical tire friction, rack resistance, and hydraulic weight.</div>
+            <input type="range" class="ffb-range" id="rng-ff-fricton" min="0" max="1" step="0.05" value="0.50" oninput="updateFFBValue('c_ff_fricton', this.value)">
+          </div>
+
+          <div class="ffb-slider-row">
+            <div class="ffb-slider-header">
+              <span class="ffb-slider-title">Power Steering Assist Torque (c_ff_assist)</span>
+              <span class="ffb-slider-val" id="val-ff-assist">0.50</span>
+            </div>
+            <div class="ffb-slider-desc">Electronic power steering assistance torque curve.</div>
+            <input type="range" class="ffb-range" id="rng-ff-assist" min="0" max="1" step="0.05" value="0.50" oninput="updateFFBValue('c_ff_assist', this.value)">
+          </div>
+
+          <!-- Group 2: Centering Dynamics -->
+          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent2); font-weight: 800; margin: 16px 0 10px;">
+            2. Centering Spring Dynamics
+          </div>
+          <div class="ffb-slider-row">
+            <div class="ffb-slider-header">
+              <span class="ffb-slider-title">High-Speed Centering Spring (c_ff_hi_spd)</span>
+              <span class="ffb-slider-val" id="val-ff-hi-spd">1.00</span>
+            </div>
+            <div class="ffb-slider-desc">Self-centering return speed and tension when cruising at highway speeds.</div>
+            <input type="range" class="ffb-range" id="rng-ff-hi-spd" min="0" max="2" step="0.05" value="1.00" oninput="updateFFBValue('c_ff_hi_spd', this.value)">
+          </div>
+
+          <div class="ffb-slider-row">
+            <div class="ffb-slider-header">
+              <span class="ffb-slider-title">Low-Speed / Parking Centering (c_ff_lo_spd)</span>
+              <span class="ffb-slider-val" id="val-ff-lo-spd">0.50</span>
+            </div>
+            <div class="ffb-slider-desc">Return force at low speeds (maneuvering, tight dock parking).</div>
+            <input type="range" class="ffb-range" id="rng-ff-lo-spd" min="0" max="2" step="0.05" value="0.50" oninput="updateFFBValue('c_ff_lo_spd', this.value)">
+          </div>
+
+          <div class="ffb-slider-row">
+            <div class="ffb-slider-header">
+              <span class="ffb-slider-title">Understeer Loss-of-Grip Slip (c_ff_undrstr)</span>
+              <span class="ffb-slider-val" id="val-ff-undrstr">0.50</span>
+            </div>
+            <div class="ffb-slider-desc">Lightens steering force when front tires lose grip and slip.</div>
+            <input type="range" class="ffb-range" id="rng-ff-undrstr" min="0" max="1" step="0.05" value="0.50" oninput="updateFFBValue('c_ff_undrstr', this.value)">
+          </div>
+
+          <!-- Group 3: Environmental Haptics & Shocks -->
+          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent2); font-weight: 800; margin: 16px 0 10px;">
+            3. Environmental &amp; Engine Haptics
+          </div>
+          <div class="ffb-slider-row">
+            <div class="ffb-slider-header">
+              <span class="ffb-slider-title">Engine Resonance Vibration (c_ff_engine)</span>
+              <span class="ffb-slider-val" id="val-ff-engine">0.25</span>
+            </div>
+            <div class="ffb-slider-desc">Engine RPM idle and acceleration harmonic vibration.</div>
+            <input type="range" class="ffb-range" id="rng-ff-engine" min="0" max="1" step="0.05" value="0.25" oninput="updateFFBValue('c_ff_engine', this.value)">
+          </div>
+
+          <div class="ffb-slider-row">
+            <div class="ffb-slider-header">
+              <span class="ffb-slider-title">Road Surface Texture (c_ff_surface)</span>
+              <span class="ffb-slider-val" id="val-ff-surface">0.30</span>
+            </div>
+            <div class="ffb-slider-desc">Cobblestone, asphalt roughness, and off-road terrain rumble.</div>
+            <input type="range" class="ffb-range" id="rng-ff-surface" min="0" max="1" step="0.05" value="0.30" oninput="updateFFBValue('c_ff_surface', this.value)">
+          </div>
+
+          <div class="ffb-slider-row">
+            <div class="ffb-slider-header">
+              <span class="ffb-slider-title">Curb &amp; Bump Shocks (c_ff_bumps)</span>
+              <span class="ffb-slider-val" id="val-ff-bumps">0.80</span>
+            </div>
+            <div class="ffb-slider-desc">Impact resistance when clipping curbs, potholes, or rumble strips.</div>
+            <input type="range" class="ffb-range" id="rng-ff-bumps" min="0" max="1" step="0.05" value="0.80" oninput="updateFFBValue('c_ff_bumps', this.value)">
+          </div>
+
+          <div class="ffb-slider-row">
+            <div class="ffb-slider-header">
+              <span class="ffb-slider-title">Collision Impact Force (c_ff_collis)</span>
+              <span class="ffb-slider-val" id="val-ff-collis">1.00</span>
+            </div>
+            <div class="ffb-slider-desc">Full-power torque jerk during vehicle crashes and barrier hits.</div>
+            <input type="range" class="ffb-range" id="rng-ff-collis" min="0" max="1" step="0.05" value="1.00" oninput="updateFFBValue('c_ff_collis', this.value)">
+          </div>
+
+          <div class="ffb-slider-row">
+            <div class="ffb-slider-header">
+              <span class="ffb-slider-title">Gearbox Shift Clunk (c_ff_gearbox)</span>
+              <span class="ffb-slider-val" id="val-ff-gearbox">0.35</span>
+            </div>
+            <div class="ffb-slider-desc">Transmission engagement shock when slotting gears.</div>
+            <input type="range" class="ffb-range" id="rng-ff-gearbox" min="0" max="1" step="0.05" value="0.35" oninput="updateFFBValue('c_ff_gearbox', this.value)">
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div style="display: flex; gap: 10px; margin-top: 14px;">
+            <button class="overlay-btn" style="flex: 1; border-radius: 12px; padding: 12px;" onclick="syncFFBToETS2()">💾 Apply FFB to ETS2 Profiles</button>
+            <button class="haptic-btn" style="flex: 0.4; border-radius: 12px; padding: 12px;" onclick="resetFFBDefaults()">↺ Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: LIVE PHYSICAL HAPTICS TEST SUITE -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="card">
+          <div class="card-title">
+            <span>🎮 Live Physical Haptics Test Suite</span>
+            <span class="tag" id="haptics-status-tag">Ready</span>
+          </div>
+          <p style="font-size: 12px; color: var(--dim); margin-bottom: 12px;">
+            Trigger real-time force feedback motor effects directly on your wheel via Gamepad Haptics &amp; WebHID.
+          </p>
+
+          <!-- Motor Pulse Visualizer -->
+          <div style="background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); margin-bottom: 8px;">
+              <span>Left Motor (Low-Freq Rumble)</span>
+              <span id="motor-left-pct">0%</span>
+            </div>
+            <div style="height: 10px; background: #232538; border-radius: 5px; overflow: hidden; margin-bottom: 12px;">
+              <div id="motor-left-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #6c5ce7, #a29bfe); transition: width 0.08s;"></div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); margin-bottom: 8px;">
+              <span>Right Motor (High-Freq Vibration)</span>
+              <span id="motor-right-pct">0%</span>
+            </div>
+            <div style="height: 10px; background: #232538; border-radius: 5px; overflow: hidden;">
+              <div id="motor-right-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00cec9, #55efc4); transition: width 0.08s;"></div>
+            </div>
+          </div>
+
+          <!-- Test Effect Buttons -->
+          <div class="haptic-grid">
+            <button class="haptic-btn" id="btn-hap-centering" onclick="playHapticEffect('centering')">
+              <span class="haptic-icon">🏎️</span>
+              <span>Centering Force</span>
+            </button>
+            <button class="haptic-btn" id="btn-hap-engine" onclick="playHapticEffect('engine')">
+              <span class="haptic-icon">⚙️</span>
+              <span>Engine Rumble</span>
+            </button>
+            <button class="haptic-btn" id="btn-hap-surface" onclick="playHapticEffect('surface')">
+              <span class="haptic-icon">🪨</span>
+              <span>Road Surface</span>
+            </button>
+            <button class="haptic-btn" id="btn-hap-curb" onclick="playHapticEffect('curb')">
+              <span class="haptic-icon">🛑</span>
+              <span>Curb Hit</span>
+            </button>
+            <button class="haptic-btn" id="btn-hap-crash" onclick="playHapticEffect('crash')">
+              <span class="haptic-icon">💥</span>
+              <span>Crash Impact</span>
+            </button>
+            <button class="haptic-btn" style="border-color: var(--red); color: #ff6b6b;" onclick="stopHapticEffect()">
+              <span class="haptic-icon">⏹️</span>
+              <span>Stop Vibration</span>
+            </button>
+          </div>
+
+          <!-- Custom Rumble Slider Test -->
+          <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px;">
+            <div style="font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 10px;">Custom Frequency Test</div>
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+              <span style="font-size: 11px; width: 80px; color: var(--dim);">Weak (HF):</span>
+              <input type="range" class="ffb-range" id="custom-weak" min="0" max="1" step="0.05" value="0.5">
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 14px;">
+              <span style="font-size: 11px; width: 80px; color: var(--dim);">Strong (LF):</span>
+              <input type="range" class="ffb-range" id="custom-strong" min="0" max="1" step="0.05" value="0.7">
+            </div>
+            <button class="haptic-btn" style="width: 100%; border-color: var(--accent);" onclick="playCustomHaptic()">
+              ⚡ Trigger Custom Rumble Burst
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       TAB VIEW 3: PRESETS HUB
+       ══════════════════════════════════════════════ -->
+  <div id="view-presets" class="tab-view">
+    <div style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
+      <div class="card">
+        <div class="card-title">
+          <span>🌐 Game Presets &amp; Community Sharing Hub</span>
+          <span class="tag" id="presets-count-tag">Loading...</span>
+        </div>
+        <div id="presets-hub-container"></div>
+      </div>
+    </div>
+  </div>
+
+</div> <!-- closes main-container -->
+
+<div id="toast-container"></div>
 
 <script>
+// ══════════════════════════════════════════════════════
+// FORCE FEEDBACK & TAB STATE
+// ══════════════════════════════════════════════════════
+let currentFFB = {
+  c_ff_enabled: 1.0,
+  c_ff_gain: 5.0,
+  c_ff_hi_spd: 1.0,
+  c_ff_lo_spd: 0.5,
+  c_ff_fricton: 0.5,
+  c_ff_engine: 0.25,
+  c_ff_surface: 0.3,
+  c_ff_bumps: 0.8,
+  c_ff_collis: 1.0,
+  c_ff_gearbox: 0.35,
+  c_ff_undrstr: 0.5,
+  c_ff_assist: 0.5
+};
+
+let currentTab = 'diag';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+
+  const btn = document.getElementById(`tab-btn-${tab}`);
+  const view = document.getElementById(`view-${tab}`);
+  if (btn) btn.classList.add('active');
+  if (view) view.classList.add('active');
+
+  if (tab === 'presets' && typeof loadPresetHub === 'function') {
+    loadPresetHub();
+  }
+}
+
+function updateFFBValue(key, val) {
+  const fVal = parseFloat(val);
+  currentFFB[key] = fVal;
+  const shortKey = key.replace('c_ff_', '');
+  const badge = document.getElementById(`val-ff-${shortKey}`);
+  if (badge) badge.textContent = fVal.toFixed(2);
+}
+
+function resetFFBDefaults() {
+  const defaults = {
+    c_ff_gain: 5.0, c_ff_fricton: 0.5, c_ff_assist: 0.5,
+    c_ff_hi_spd: 1.0, c_ff_lo_spd: 0.5, c_ff_undrstr: 0.5,
+    c_ff_engine: 0.25, c_ff_surface: 0.3, c_ff_bumps: 0.8,
+    c_ff_collis: 1.0, c_ff_gearbox: 0.35
+  };
+  for (const [k, v] of Object.entries(defaults)) {
+    currentFFB[k] = v;
+    const shortKey = k.replace('c_ff_', '');
+    const rng = document.getElementById(`rng-ff-${shortKey}`);
+    const badge = document.getElementById(`val-ff-${shortKey}`);
+    if (rng) rng.value = v;
+    if (badge) badge.textContent = v.toFixed(2);
+  }
+  showToast('↺ Force feedback sliders reset to factory defaults.');
+}
+
+async function syncFFBToETS2() {
+  showToast('⏳ Syncing FFB to ETS2 player profiles...');
+  try {
+    const res = await fetch('/api/presets/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        preset_data: {
+          name: 'Custom Web Calibration',
+          ffb: currentFFB,
+          buttons: {
+            parkingbrake: 'keyboard.space?0 | joy.b15?0',
+            gearboxhshifter: '1',
+            gearbox: '2',
+            hshifter_toggle1: 'joy.b23?0',
+            hshifter_gear1: 'joy.b16?0',
+            hshifter_gear2: 'joy.b17?0',
+            hshifter_gear3: 'joy.b18?0',
+            hshifter_gear4: 'joy.b19?0',
+            hshifter_gear5: 'joy.b20?0',
+            hshifter_gear6: 'joy.b21?0',
+            hshifter_gear_r: 'joy.b22?0'
+          }
+        }
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`✅ Successfully applied FFB to ${data.count} profile(s)!`);
+    } else {
+      showToast(`❌ Failed to apply: ${data.error}`, 'error');
+    }
+  } catch (err) {
+    showToast(`❌ Server communication error: ${err.message}`, 'error');
+  }
+}
+
+// Haptic vibration playback
+let hapticTimeout = null;
+
+function animateHapticPulse(weak, strong, duration) {
+  const leftBar = document.getElementById('motor-left-bar');
+  const rightBar = document.getElementById('motor-right-bar');
+  const leftPct = document.getElementById('motor-left-pct');
+  const rightPct = document.getElementById('motor-right-pct');
+
+  if (leftBar && rightBar) {
+    leftBar.style.width = `${Math.round(strong * 100)}%`;
+    rightBar.style.width = `${Math.round(weak * 100)}%`;
+    if (leftPct) leftPct.textContent = `${Math.round(strong * 100)}%`;
+    if (rightPct) rightPct.textContent = `${Math.round(weak * 100)}%`;
+
+    if (hapticTimeout) clearTimeout(hapticTimeout);
+    hapticTimeout = setTimeout(() => {
+      leftBar.style.width = '0%';
+      rightBar.style.width = '0%';
+      if (leftPct) leftPct.textContent = '0%';
+      if (rightPct) rightPct.textContent = '0%';
+      document.querySelectorAll('.haptic-btn').forEach(b => b.classList.remove('active-pulse'));
+    }, duration);
+  }
+}
+
+async function playHapticEffect(type) {
+  let weak = 0.5, strong = 0.5, duration = 800;
+  if (type === 'engine') { weak = 0.2; strong = 0.4; duration = 1800; }
+  else if (type === 'surface') { weak = 0.85; strong = 0.25; duration = 1200; }
+  else if (type === 'curb') { weak = 0.6; strong = 0.95; duration = 500; }
+  else if (type === 'crash') { weak = 1.0; strong = 1.0; duration = 750; }
+  else if (type === 'centering') { weak = 0.4; strong = 0.7; duration = 1000; }
+
+  const btn = document.getElementById(`btn-hap-${type}`);
+  if (btn) btn.classList.add('active-pulse');
+
+  animateHapticPulse(weak, strong, duration);
+
+  const gp = navigator.getGamepads ? navigator.getGamepads()[0] : null;
+  if (gp && gp.vibrationActuator) {
+    try {
+      await gp.vibrationActuator.playEffect('dual-rumble', {
+        startDelay: 0,
+        duration: duration,
+        weakMagnitude: weak,
+        strongMagnitude: strong
+      });
+      showToast(`⚡ Fired ${type.toUpperCase()} motor pulse (${duration}ms)`);
+      return;
+    } catch(e) {
+      console.warn('Gamepad vibrationActuator failed:', e);
+    }
+  }
+  showToast(`⚡ ${type.toUpperCase()} motor pulse simulated (${duration}ms)`);
+}
+
+function stopHapticEffect() {
+  if (hapticTimeout) clearTimeout(hapticTimeout);
+  const leftBar = document.getElementById('motor-left-bar');
+  const rightBar = document.getElementById('motor-right-bar');
+  if (leftBar) leftBar.style.width = '0%';
+  if (rightBar) rightBar.style.width = '0%';
+  document.querySelectorAll('.haptic-btn').forEach(b => b.classList.remove('active-pulse'));
+
+  const gp = navigator.getGamepads ? navigator.getGamepads()[0] : null;
+  if (gp && gp.vibrationActuator && gp.vibrationActuator.reset) {
+    try { gp.vibrationActuator.reset(); } catch(e) {}
+  }
+  showToast('⏹️ Vibration stopped.');
+}
+
+async function playCustomHaptic() {
+  const weak = parseFloat(document.getElementById('custom-weak').value || '0.5');
+  const strong = parseFloat(document.getElementById('custom-strong').value || '0.7');
+  animateHapticPulse(weak, strong, 800);
+
+  const gp = navigator.getGamepads ? navigator.getGamepads()[0] : null;
+  if (gp && gp.vibrationActuator) {
+    try {
+      await gp.vibrationActuator.playEffect('dual-rumble', {
+        startDelay: 0,
+        duration: 800,
+        weakMagnitude: weak,
+        strongMagnitude: strong
+      });
+      showToast(`⚡ Custom burst: HF ${(weak*100).toFixed(0)}%, LF ${(strong*100).toFixed(0)}%`);
+      return;
+    } catch(e) {}
+  }
+  showToast(`⚡ Custom pulse simulated`);
+}
+
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  if (type === 'error') toast.style.borderColor = 'var(--red)';
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.4s';
+    setTimeout(() => toast.remove(), 400);
+  }, 3500);
+}
 // ══════════════════════════════════════════════════════
 // RYUNIX XR1 BUTTON MAPPINGS & CONFIGURATION
 // ══════════════════════════════════════════════════════
