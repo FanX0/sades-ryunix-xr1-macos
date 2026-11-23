@@ -1405,7 +1405,8 @@
       <button class="nav-tab" id="tab-btn-presets" onclick="switchTab('presets')">🌐 Preset Hub</button>
     </div>
 
-    <div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <button id="btn-webhid-connect" class="overlay-btn" style="padding: 6px 14px; font-size: 11px; border-radius: 20px; background: linear-gradient(135deg, #1e90ff, #3742fa); color: #fff; cursor: pointer;" onclick="connectWebHID()" title="Connect Ryunix XR1 via WebHID for physical motor actuation">🔌 Connect WebHID</button>
       <div class="status-badge">
         <div class="status-dot" id="status-dot"></div>
         <span id="status-text" style="font-weight: 600;">Waiting for controller...</span>
@@ -1872,6 +1873,18 @@
             Trigger real-time force feedback motor effects directly on your wheel via Gamepad Haptics &amp; WebHID.
           </p>
 
+          <!-- WebHID Hardware Actuation Banner -->
+          <div id="webhid-banner" style="background: rgba(30, 144, 255, 0.08); border: 1px dashed rgba(30, 144, 255, 0.3); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px;">⚡</span>
+              <div>
+                <div style="font-weight: 700; color: #70a1ff;">Hardware Motor Actuator:</div>
+                <div id="webhid-status-text" style="color: var(--dim);">WebHID Disconnected (Emulated Only)</div>
+              </div>
+            </div>
+            <button id="btn-webhid-card-connect" class="overlay-btn" style="padding: 5px 12px; font-size: 10px; border-radius: 8px;" onclick="connectWebHID()">Connect USB Motor</button>
+          </div>
+
           <!-- Motor Pulse Visualizer -->
           <div style="background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px;">
             <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); margin-bottom: 8px;">
@@ -2190,6 +2203,271 @@ function animateHapticPulse(weak, strong, duration) {
   }
 }
 
+// ══════════════════════════════════════════════════════
+// WEBHID DIRECT HARDWARE MOTOR ACTUATION ENGINE
+// ══════════════════════════════════════════════════════
+let hidDevice = null;
+let hidActuatorsEnabled = false;
+let hidRumbleInterval = null;
+
+async function initWebHID() {
+  if (!navigator.hid) {
+    console.info('WebHID API not supported in this browser (use Chrome/Edge/Brave).');
+    return;
+  }
+  try {
+    const devices = await navigator.hid.getDevices();
+    const dev = devices.find(d => d.vendorId === 0x11ff && d.productId === 0x2364);
+    if (dev) {
+      await attachHIDDevice(dev, true);
+    }
+  } catch(e) {
+    console.warn('WebHID auto-check failed:', e);
+  }
+
+  navigator.hid.addEventListener('connect', event => {
+    if (event.device.vendorId === 0x11ff && event.device.productId === 0x2364) {
+      attachHIDDevice(event.device);
+    }
+  });
+
+  navigator.hid.addEventListener('disconnect', event => {
+    if (hidDevice && event.device === hidDevice) {
+      hidDevice = null;
+      hidActuatorsEnabled = false;
+      updateWebHIDBadge(false);
+      showToast('⚠️ Ryunix XR1 USB disconnected.', 'error');
+    }
+  });
+}
+
+async function connectWebHID() {
+  if (!navigator.hid) {
+    showToast('⚠️ WebHID requires Chrome, Edge, or Brave on macOS.', 'error');
+    return;
+  }
+  try {
+    const devices = await navigator.hid.requestDevice({
+      filters: [{ vendorId: 0x11ff, productId: 0x2364 }]
+    });
+    if (devices.length > 0) {
+      await attachHIDDevice(devices[0]);
+      showToast('🟢 Ryunix XR1 WebHID Connected & Motors Armed!');
+    }
+  } catch(e) {
+    console.warn('WebHID user request cancelled:', e);
+    showToast('WebHID connection cancelled.', 'info');
+  }
+}
+
+async function attachHIDDevice(dev, quiet = false) {
+  try {
+    hidDevice = dev;
+    if (!hidDevice.opened) {
+      await hidDevice.open();
+    }
+    // Report 12 (0x0C): Device Control (Byte 0 = 1: Enable Actuators)
+    try {
+      await hidDevice.sendReport(12, new Uint8Array([1]));
+      // Report 13 (0x0D): Device Gain (Byte 0 = 255: 100% Master Gain)
+      await hidDevice.sendReport(13, new Uint8Array([255]));
+      hidActuatorsEnabled = true;
+    } catch(err) {
+      console.warn('WebHID initial device control error:', err);
+    }
+    updateWebHIDBadge(true);
+    if (!quiet) showToast('⚡ Hardware Actuators Armed (VID: 0x11FF PID: 0x2364)!');
+  } catch(e) {
+    console.error('Failed to open WebHID device:', e);
+    updateWebHIDBadge(false);
+  }
+}
+
+function updateWebHIDBadge(connected) {
+  const topBtn = document.getElementById('btn-webhid-connect');
+  const cardText = document.getElementById('webhid-status-text');
+  const cardBtn = document.getElementById('btn-webhid-card-connect');
+  const banner = document.getElementById('webhid-banner');
+  const statusTag = document.getElementById('haptics-status-tag');
+
+  if (connected) {
+    if (topBtn) {
+      topBtn.innerHTML = '🟢 WebHID Armed';
+      topBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+      topBtn.title = 'Ryunix XR1 USB PID Actuators are connected and armed';
+    }
+    if (cardText) {
+      cardText.textContent = '🟢 Armed (VID: 0x11FF PID: 0x2364) - Physical Actuators Active!';
+      cardText.style.color = '#10b981';
+      cardText.style.fontWeight = '700';
+    }
+    if (cardBtn) {
+      cardBtn.textContent = 'Armed ✓';
+      cardBtn.style.background = '#10b981';
+      cardBtn.disabled = true;
+    }
+    if (banner) {
+      banner.style.background = 'rgba(16, 185, 129, 0.12)';
+      banner.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+    }
+    if (statusTag) {
+      statusTag.textContent = 'Hardware Active';
+      statusTag.style.background = '#10b981';
+      statusTag.style.color = '#000';
+    }
+  } else {
+    if (topBtn) {
+      topBtn.innerHTML = '🔌 Connect WebHID';
+      topBtn.style.background = 'linear-gradient(135deg, #1e90ff, #3742fa)';
+      topBtn.title = 'Click to grant WebHID USB access to Ryunix XR1';
+    }
+    if (cardText) {
+      cardText.textContent = 'WebHID Disconnected (Emulated Only)';
+      cardText.style.color = 'var(--dim)';
+      cardText.style.fontWeight = 'normal';
+    }
+    if (cardBtn) {
+      cardBtn.textContent = 'Connect USB Motor';
+      cardBtn.style.background = 'var(--accent)';
+      cardBtn.disabled = false;
+    }
+    if (banner) {
+      banner.style.background = 'rgba(30, 144, 255, 0.08)';
+      banner.style.borderColor = 'rgba(30, 144, 255, 0.25)';
+    }
+    if (statusTag) {
+      statusTag.textContent = 'Ready';
+      statusTag.style.background = '';
+      statusTag.style.color = '';
+    }
+  }
+}
+
+async function sendConstantForce(magnitude) {
+  if (!hidDevice || !hidDevice.opened) return;
+  // Clamp magnitude between -10000 and 10000 (16-bit signed PID range)
+  magnitude = Math.max(-10000, Math.min(10000, Math.round(magnitude)));
+  const lowByte = magnitude & 0xFF;
+  const highByte = (magnitude >> 8) & 0xFF;
+
+  try {
+    // Report ID 5: [EffectBlockIndex, MagLow, MagHigh]
+    await hidDevice.sendReport(5, new Uint8Array([1, lowByte, highByte]));
+    if (magnitude !== 0) {
+      // Report ID 10: [EffectBlockIndex, Op=1 (Start), Loop=1]
+      await hidDevice.sendReport(10, new Uint8Array([1, 1, 1]));
+    }
+  } catch(e) {}
+}
+
+async function executeWebHIDEffect(type, duration) {
+  if (!hidDevice || !hidDevice.opened) return;
+
+  try {
+    await hidDevice.sendReport(12, new Uint8Array([1])); // Enable Actuators
+    await hidDevice.sendReport(13, new Uint8Array([255])); // 100% gain
+  } catch(e) {}
+
+  if (hidRumbleInterval) {
+    clearInterval(hidRumbleInterval);
+    hidRumbleInterval = null;
+  }
+
+  const startTime = Date.now();
+
+  if (type === 'centering') {
+    // Dynamic centering test: pull left, pull right, center spring
+    hidRumbleInterval = setInterval(async () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > duration) {
+        clearInterval(hidRumbleInterval);
+        hidRumbleInterval = null;
+        await sendConstantForce(0);
+        return;
+      }
+      try {
+        if (elapsed < 350) {
+          await sendConstantForce(-7000); // Pull Left
+        } else if (elapsed < 700) {
+          await sendConstantForce(7000); // Pull Right
+        } else {
+          const damp = 4500 * Math.sin(elapsed * 0.04);
+          await sendConstantForce(Math.round(damp));
+        }
+      } catch(e) {}
+    }, 25);
+
+  } else if (type === 'engine') {
+    // 25Hz low-frequency diesel engine harmonic rumble
+    let sign = 1;
+    hidRumbleInterval = setInterval(async () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > duration) {
+        clearInterval(hidRumbleInterval);
+        hidRumbleInterval = null;
+        await sendConstantForce(0);
+        return;
+      }
+      try {
+        sign = -sign;
+        await sendConstantForce(sign * 4500);
+      } catch(e) {}
+    }, 20);
+
+  } else if (type === 'surface') {
+    // 50Hz high-frequency road gravel texture
+    hidRumbleInterval = setInterval(async () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > duration) {
+        clearInterval(hidRumbleInterval);
+        hidRumbleInterval = null;
+        await sendConstantForce(0);
+        return;
+      }
+      try {
+        const force = (Math.random() > 0.5 ? 1 : -1) * Math.round(2500 + Math.random() * 3500);
+        await sendConstantForce(force);
+      } catch(e) {}
+    }, 15);
+
+  } else if (type === 'curb') {
+    // Sharp dual curb jolts
+    let sign = 1;
+    hidRumbleInterval = setInterval(async () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > duration) {
+        clearInterval(hidRumbleInterval);
+        hidRumbleInterval = null;
+        await sendConstantForce(0);
+        return;
+      }
+      try {
+        sign = -sign;
+        const decay = Math.max(0, 1 - (elapsed / duration));
+        await sendConstantForce(Math.round(sign * 8500 * decay));
+      } catch(e) {}
+    }, 30);
+
+  } else if (type === 'crash') {
+    // Maximum violence crash impact
+    let sign = 1;
+    hidRumbleInterval = setInterval(async () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > duration) {
+        clearInterval(hidRumbleInterval);
+        hidRumbleInterval = null;
+        await sendConstantForce(0);
+        return;
+      }
+      try {
+        sign = -sign;
+        const decay = Math.max(0, 1 - (elapsed / duration));
+        await sendConstantForce(Math.round(sign * 10000 * decay));
+      } catch(e) {}
+    }, 25);
+  }
+}
+
 async function playHapticEffect(type) {
   let weak = 0.5, strong = 0.5, duration = 800;
   if (type === 'engine') { weak = 0.2; strong = 0.4; duration = 1800; }
@@ -2200,8 +2478,13 @@ async function playHapticEffect(type) {
 
   const btn = document.getElementById(`btn-hap-${type}`);
   if (btn) btn.classList.add('active-pulse');
-
   animateHapticPulse(weak, strong, duration);
+
+  if (hidDevice && hidDevice.opened) {
+    await executeWebHIDEffect(type, duration);
+    showToast(`⚡ Fired ${type.toUpperCase()} physical USB motor effect (${duration}ms)`);
+    return;
+  }
 
   const gp = navigator.getGamepads ? navigator.getGamepads()[0] : null;
   if (gp && gp.vibrationActuator) {
@@ -2218,28 +2501,63 @@ async function playHapticEffect(type) {
       console.warn('Gamepad vibrationActuator failed:', e);
     }
   }
-  showToast(`⚡ ${type.toUpperCase()} motor pulse simulated (${duration}ms)`);
+
+  showToast(`⚡ ${type.toUpperCase()} simulated. Connect WebHID above for physical motor pull!`);
 }
 
-function stopHapticEffect() {
+async function stopHapticEffect() {
   if (hapticTimeout) clearTimeout(hapticTimeout);
+  if (hidRumbleInterval) {
+    clearInterval(hidRumbleInterval);
+    hidRumbleInterval = null;
+  }
+
   const leftBar = document.getElementById('motor-left-bar');
   const rightBar = document.getElementById('motor-right-bar');
   if (leftBar) leftBar.style.width = '0%';
   if (rightBar) rightBar.style.width = '0%';
   document.querySelectorAll('.haptic-btn').forEach(b => b.classList.remove('active-pulse'));
 
+  if (hidDevice && hidDevice.opened) {
+    try {
+      await sendConstantForce(0);
+      await hidDevice.sendReport(10, new Uint8Array([1, 3, 1])); // Stop effect 1
+      await hidDevice.sendReport(12, new Uint8Array([3])); // Stop all effects
+    } catch(e) {}
+  }
+
   const gp = navigator.getGamepads ? navigator.getGamepads()[0] : null;
   if (gp && gp.vibrationActuator && gp.vibrationActuator.reset) {
     try { gp.vibrationActuator.reset(); } catch(e) {}
   }
-  showToast('⏹️ Vibration stopped.');
+  showToast('⏹️ Vibration & motor torque stopped.');
 }
 
 async function playCustomHaptic() {
   const weak = parseFloat(document.getElementById('custom-weak').value || '0.5');
   const strong = parseFloat(document.getElementById('custom-strong').value || '0.7');
   animateHapticPulse(weak, strong, 800);
+
+  if (hidDevice && hidDevice.opened) {
+    const maxMag = Math.round(strong * 9000);
+    const intervalMs = Math.round(40 - (weak * 25));
+    const startTime = Date.now();
+    let sign = 1;
+    if (hidRumbleInterval) clearInterval(hidRumbleInterval);
+    hidRumbleInterval = setInterval(async () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > 800) {
+        clearInterval(hidRumbleInterval);
+        hidRumbleInterval = null;
+        await sendConstantForce(0);
+        return;
+      }
+      sign = -sign;
+      await sendConstantForce(sign * maxMag);
+    }, intervalMs);
+    showToast(`⚡ WebHID Custom burst: HF ${(weak*100).toFixed(0)}%, LF ${(strong*100).toFixed(0)}%`);
+    return;
+  }
 
   const gp = navigator.getGamepads ? navigator.getGamepads()[0] : null;
   if (gp && gp.vibrationActuator) {
@@ -2254,7 +2572,7 @@ async function playCustomHaptic() {
       return;
     } catch(e) {}
   }
-  showToast(`⚡ Custom pulse simulated`);
+  showToast(`⚡ Custom pulse simulated (Connect WebHID for hardware torque)`);
 }
 
 function showToast(msg, type = 'info') {
@@ -3124,8 +3442,9 @@ function setBtnClass(id, active) {
 // Start update loop
 requestAnimationFrame(updateLoop);
 
-// Auto-check existing gamepads & preload presets
+// Auto-check existing gamepads, WebHID & preload presets
 setTimeout(() => {
+  if (typeof initWebHID === 'function') initWebHID();
   if (typeof loadPresetHub === 'function') loadPresetHub();
   const gps = navigator.getGamepads ? navigator.getGamepads() : [];
   for (const gp of gps) {
