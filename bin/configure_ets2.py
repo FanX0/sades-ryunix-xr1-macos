@@ -78,16 +78,21 @@ def load_preset(preset_arg: str, root_dir: Path) -> dict:
     return {"ffb": DEFAULT_FFB, "buttons": DEFAULT_BINDINGS, "name": "Fallback"}
 
 
-def patch_controls_sii(controls_path: Path, preset: dict) -> bool:
+def log(msg: str, quiet: bool = False):
+    if not quiet:
+        print(msg, file=sys.stderr)
+
+
+def patch_controls_sii(controls_path: Path, preset: dict, quiet: bool = False) -> bool:
     preset_name = preset.get("name", "Custom")
-    print(f"[*] Applying preset [{preset_name}] to: {controls_path.parent.name}/controls.sii")
+    log(f"[*] Applying preset [{preset_name}] to: {controls_path.parent.name}/controls.sii", quiet)
 
     bak_path = controls_path.with_suffix(".sii.bak")
     if not bak_path.exists():
         try:
             shutil.copy2(controls_path, bak_path)
         except Exception as e:
-            print(f"[-] Warning: Failed to create backup: {e}", file=sys.stderr)
+            log(f"[-] Warning: Failed to create backup: {e}", quiet)
 
     content = controls_path.read_text(encoding="utf-8", errors="ignore")
     lines = content.splitlines()
@@ -127,28 +132,28 @@ def patch_controls_sii(controls_path: Path, preset: dict) -> bool:
 
     if updated:
         controls_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        print(f"[+] Successfully calibrated profile: {controls_path.parent.name}")
+        log(f"[+] Successfully calibrated profile: {controls_path.parent.name}", quiet)
         return True
     else:
-        print(f"[*] Profile is already in sync with preset: {controls_path.parent.name}")
+        log(f"[*] Profile is already in sync with preset: {controls_path.parent.name}", quiet)
         return True
 
 
-def scan_and_configure_ets2(doc_dir: Path, preset: dict):
+def scan_and_configure_ets2(doc_dir: Path, preset: dict, quiet: bool = False):
     if not doc_dir.is_dir():
-        print(f"[-] ETS2 Documents directory not found at: {doc_dir}")
+        log(f"[-] ETS2 Documents directory not found at: {doc_dir}", quiet)
         return []
 
     profile_dirs = list(doc_dir.glob("profiles/*")) + list(doc_dir.glob("steam_profiles/*"))
     if not profile_dirs:
-        print(f"[-] No ETS2 profiles found in: {doc_dir}")
+        log(f"[-] No ETS2 profiles found in: {doc_dir}", quiet)
         return []
 
     configured = []
     for p in profile_dirs:
         ctrl = p / "controls.sii"
         if ctrl.is_file():
-            if patch_controls_sii(ctrl, preset):
+            if patch_controls_sii(ctrl, preset, quiet):
                 configured.append(p.name)
 
     return configured
@@ -166,7 +171,7 @@ def main():
     doc_path = Path(args.doc_dir).resolve()
     preset_data = load_preset(args.preset, repo_root)
 
-    configured_profiles = scan_and_configure_ets2(doc_path, preset_data)
+    configured_profiles = scan_and_configure_ets2(doc_path, preset_data, quiet=args.json)
 
     result = {
         "success": len(configured_profiles) > 0,
