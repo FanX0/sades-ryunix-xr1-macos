@@ -2453,42 +2453,42 @@ let currentFFBMode = 'easy';
 
 const EASY_PRESETS = {
   cruiser: {
-    strength: 45,
-    centering: 30,
-    weight: 20,
-    vibration: 40,
+    strength: 40,
+    centering: 25,
+    weight: 15,
+    vibration: 35,
   },
   featherlight: {
-    strength: 35,
-    centering: 20,
-    weight: 10,
-    vibration: 30,
+    strength: 25,
+    centering: 15,
+    weight: 5,
+    vibration: 20,
   },
   heavy: {
-    strength: 65,
-    centering: 55,
-    weight: 60,
-    vibration: 50,
+    strength: 60,
+    centering: 50,
+    weight: 45,
+    vibration: 45,
   },
   racing: {
-    strength: 75,
-    centering: 70,
-    weight: 45,
-    vibration: 65,
+    strength: 70,
+    centering: 65,
+    weight: 35,
+    vibration: 60,
   },
   drift: {
-    strength: 50,
-    centering: 85,
+    strength: 45,
+    centering: 75,
     weight: 10,
     vibration: 25,
   }
 };
 
 let currentEasySettings = {
-  strength: 45,
-  centering: 30,
-  weight: 20,
-  vibration: 40,
+  strength: 40,
+  centering: 25,
+  weight: 15,
+  vibration: 35,
 };
 
 function switchFFBMode(mode) {
@@ -2835,7 +2835,7 @@ async function testEasyFFBFeel() {
   const weight = currentEasySettings.weight / 100;
   const vibration = currentEasySettings.vibration / 100;
 
-  animateHapticPulse(vibration, strength, 1600);
+  animateHapticPulse(vibration, strength, 1800);
 
   // If WebHID is not open, automatically request connection!
   if (!hidDevice || !hidDevice.opened) {
@@ -2852,17 +2852,10 @@ async function testEasyFFBFeel() {
 
   showToast(`🎯 Testing ${currentActivePresetName}: Strength ${currentEasySettings.strength}%, Centering ${currentEasySettings.centering}%, Weight ${currentEasySettings.weight}%`);
 
-  // Calculate preset-specific resistance:
-  // Weight heavily influences basePull & turn-in resistance (simulating hydraulic inertia)
-  const isHeavy = weight > 0.45;
-  const basePull = Math.round(1200 + centering * 3500 + weight * 2800);
-  const pullMag = Math.round(strength * basePull);
-
-  // Frequency varies by vehicle character:
-  // Heavy truck: deep 20Hz diesel shudder
-  // Cruiser/Racing: crisper, higher frequency
-  const vibFreq = isHeavy ? 0.035 : 0.075;
-  const vibMagnitude = Math.round(vibration * (isHeavy ? 4500 : 3200));
+  // Authentic truck feel demo:
+  // Smooth progressive resistance ramp (no sudden jerky hits)
+  const basePull = Math.round(strength * (600 + centering * 1800 + weight * 900));
+  const vibMagnitude = Math.round(vibration * (1200 + weight * 800));
 
   const startTime = Date.now();
   let sign = 1;
@@ -2871,7 +2864,7 @@ async function testEasyFFBFeel() {
 
   hidRumbleInterval = setInterval(async () => {
     const elapsed = Date.now() - startTime;
-    if (elapsed > 1600) {
+    if (elapsed > 1800) {
       clearInterval(hidRumbleInterval);
       hidRumbleInterval = null;
       await sendConstantForce(0);
@@ -2880,19 +2873,22 @@ async function testEasyFFBFeel() {
     }
     try {
       if (elapsed < 500) {
-        // Phase 1: Progressive ramp pull left (steering rack resistance)
-        const ramp = Math.min(1.0, elapsed / 250);
-        await sendConstantForce(Math.round(-pullMag * ramp));
+        // Phase 1: Progressive smooth resistance pull left (corner entry)
+        const ramp = Math.sin((elapsed / 500) * (Math.PI / 2));
+        await sendConstantForce(Math.round(-basePull * ramp));
       } else if (elapsed < 1000) {
-        // Phase 2: Centering snap-back & pull right
-        const ramp = Math.min(1.0, (elapsed - 500) / 250);
-        await sendConstantForce(Math.round(pullMag * ramp));
+        // Phase 2: Smooth self-centering return
+        const ramp = Math.cos(((elapsed - 500) / 500) * (Math.PI / 2));
+        await sendConstantForce(Math.round(-basePull * ramp));
+      } else if (elapsed < 1400) {
+        // Phase 3: Smooth pull right & center return
+        const ramp = Math.sin(((elapsed - 1000) / 400) * Math.PI);
+        await sendConstantForce(Math.round(basePull * ramp));
       } else {
-        // Phase 3: Centering spring + engine/surface resonance
+        // Phase 4: Diesel engine idle harmonic vibration at center
         sign = -sign;
         const vib = Math.round(sign * vibMagnitude);
-        const center = Math.round(Math.sin((elapsed - 1000) * vibFreq) * pullMag * 0.45);
-        await sendConstantForce(center + vib);
+        await sendConstantForce(vib);
       }
     } catch(e) {}
   }, 25);
@@ -3213,6 +3209,8 @@ function updateWebHIDBadge(connected) {
 }
 
 let hidEffectRunning = false;
+let hidReportSending = false;
+let pendingHwForce = null;
 
 async function armHardwareActuators(forceGain) {
   if (!hidDevice || !hidDevice.opened) return false;
@@ -3224,6 +3222,13 @@ async function armHardwareActuators(forceGain) {
     const S = currentEasySettings.strength / 100;
     const gainVal = forceGain !== undefined ? forceGain : Math.round(Math.max(40, Math.min(255, (0.25 + S * 0.75) * 255)));
     await hidDevice.sendReport(13, new Uint8Array([gainVal]));
+
+    // Start effect block 1 once
+    if (!hidEffectRunning) {
+      await hidDevice.sendReport(10, new Uint8Array([1, 1, 1])); // Op=1 (Start), Loop=1
+      hidEffectRunning = true;
+    }
+
     hidActuatorsEnabled = true;
     return true;
   } catch(e) {
@@ -3232,31 +3237,48 @@ async function armHardwareActuators(forceGain) {
   }
 }
 
+async function stopHardwareActuators() {
+  if (!hidDevice || !hidDevice.opened) return;
+  try {
+    await hidDevice.sendReport(5, new Uint8Array([1, 0, 0])); // Zero torque
+    await hidDevice.sendReport(10, new Uint8Array([1, 3, 1])); // Op=3 (Stop Effect)
+    hidEffectRunning = false;
+  } catch(e) {}
+}
+
 async function sendConstantForce(magnitude) {
   if (!hidDevice || !hidDevice.opened) return;
   // Clamp magnitude between -10000 and 10000 (16-bit signed PID range)
   magnitude = Math.max(-10000, Math.min(10000, Math.round(magnitude)));
-  const lowByte = magnitude & 0xFF;
-  const highByte = (magnitude >> 8) & 0xFF;
+
+  // If a report is currently in-flight on the USB bus, store target magnitude to send on completion
+  if (hidReportSending) {
+    pendingHwForce = magnitude;
+    return;
+  }
+  hidReportSending = true;
 
   try {
-    // Report ID 5: [EffectBlockIndex, MagLow, MagHigh]
+    const lowByte = magnitude & 0xFF;
+    const highByte = (magnitude >> 8) & 0xFF;
+
+    // Report ID 5: [EffectBlockIndex=1, MagLow, MagHigh]
     await hidDevice.sendReport(5, new Uint8Array([1, lowByte, highByte]));
-    if (magnitude !== 0) {
-      if (!hidEffectRunning) {
-        // Start effect once (Op=1, Loop=1)
-        await hidDevice.sendReport(10, new Uint8Array([1, 1, 1]));
-        hidEffectRunning = true;
-      }
-    } else {
-      if (hidEffectRunning) {
-        // Stop effect cleanly (Op=2)
-        await hidDevice.sendReport(10, new Uint8Array([1, 2, 0]));
-        hidEffectRunning = false;
-      }
+
+    // Ensure effect block is running
+    if (!hidEffectRunning && magnitude !== 0) {
+      await hidDevice.sendReport(10, new Uint8Array([1, 1, 1]));
+      hidEffectRunning = true;
     }
   } catch(e) {
-    hidEffectRunning = false;
+    // If USB packet was rejected, retry next loop
+  } finally {
+    hidReportSending = false;
+    if (pendingHwForce !== null) {
+      const nextMag = pendingHwForce;
+      pendingHwForce = null;
+      sendConstantForce(nextMag);
+    }
   }
 }
 
@@ -4112,11 +4134,25 @@ function updateLoop() {
       const W = currentEasySettings.weight / 100;
       const V = currentEasySettings.vibration / 100;
 
-      // Dynamic centering spring torque pulling back to 0°
-      const springPull = -Math.sign(steerDeg) * Math.min(8500, Math.pow(Math.abs(steerDeg) / 45, 1.15) * (C * 2200 + W * 1800 + 500));
-      // Subtle diesel engine idle vibration
-      const engineVib = Math.round(Math.sin(Date.now() * 0.04) * V * 500);
-      const liveTotal = Math.round(S * (springPull + engineVib));
+      // Smooth progressive steering angle (-1.0 to 1.0 over 450° half-turn)
+      const normSteer = Math.max(-1.0, Math.min(1.0, steerDeg / 450.0));
+      
+      // Authentic power steering self-centering curve (sinusoidal progressive return)
+      // At low angles (<90°), power steering makes the wheel light and effortless
+      // As angle increases, centering resistance builds progressively without sudden stiffness
+      const satCurve = Math.sin(normSteer * (Math.PI / 2.0));
+      const centerSpring = -satCurve * (800 + C * 2200);
+
+      // Hydraulic rack weight / friction (smooth linear damping, no abrupt steps)
+      const rackWeight = -normSteer * (300 + W * 1400);
+
+      // Diesel engine idle vibration (high frequency subtle hum, zero at center)
+      let engineVib = 0;
+      if (Math.abs(normSteer) > 0.02 && V > 0.05) {
+        engineVib = Math.sin(Date.now() * 0.18) * V * 280;
+      }
+
+      const liveTotal = Math.round(S * (centerSpring + rackWeight + engineVib));
       sendConstantForce(liveTotal);
     }
   }
