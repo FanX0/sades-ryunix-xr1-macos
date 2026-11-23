@@ -3,16 +3,18 @@
 Euro Truck Simulator 2 - Profile, Controls & Force Feedback Calibrator
 Applies curated or custom presets (FFB parameters and button/shifter bindings)
 to all Euro Truck Simulator 2 player profiles in controls.sii.
+Dynamically detects the active DirectInput 8 GUID for Ryunix XR1 and un-blacklists devices.
 """
 
 import argparse
 import json
 import os
+import re
 import shutil
 import sys
 from pathlib import Path
 
-DEVICE_JOY_STR = "di8.'{9E573EDF-7734-11D2-8D4A-23903FB6BDF7}|{236411FF-0000-0000-0000-504944564944}'"
+FALLBACK_DEVICE_JOY_STR = "di8.'{9E573ED3-7734-11D2-8D4A-23903FB6BDF7}|{236411FF-0000-0000-0000-504944564944}'"
 
 DEFAULT_BINDINGS = {
     "parkingbrake": "keyboard.space?0 | joy.b15?0",
@@ -30,18 +32,98 @@ DEFAULT_BINDINGS = {
 
 DEFAULT_FFB = {
     "c_ff_enabled": 1.0,
-    "c_ff_gain": 5.0,
-    "c_ff_hi_spd": 1.0,
-    "c_ff_lo_spd": 0.5,
-    "c_ff_fricton": 0.5,
-    "c_ff_engine": 0.25,
-    "c_ff_surface": 0.3,
-    "c_ff_bumps": 0.8,
+    "c_ff_gain": 8.0,
+    "c_ff_hi_spd": 1.4,
+    "c_ff_lo_spd": 0.8,
+    "c_ff_fricton": 0.75,
+    "c_ff_engine": 0.35,
+    "c_ff_surface": 0.30,
+    "c_ff_bumps": 0.85,
     "c_ff_collis": 1.0,
     "c_ff_gearbox": 0.35,
-    "c_ff_undrstr": 0.5,
-    "c_ff_assist": 0.5,
+    "c_ff_undrstr": 0.65,
+    "c_ff_assist": 0.45,
 }
+
+
+def log(msg: str, quiet: bool = False):
+    if not quiet:
+        print(msg, file=sys.stderr)
+
+
+def detect_active_di8_guid(doc_dir: Path, quiet: bool = False) -> str:
+    """
+    Detects the active DirectInput8 GUID assigned to Ryunix XR1 (VID 0x11FF, PID 0x2364)
+    from game.log.txt or global_controls.sii.
+    """
+    # 1. Try reading recent entries in game.log.txt
+    log_file = doc_dir / "game.log.txt"
+    if log_file.is_file():
+        try:
+            content = log_file.read_text(encoding="utf-8", errors="ignore")
+            # Look for lines like: [di8] Initializing device 'LITE STAR Ryunix XR1' as '{...}|{236411FF-...}'
+            matches = re.findall(
+                r"\[di8\] Initializing device '.*Ryunix XR1.*' as '(\{[0-9A-Fa-f\-]+\}\|(?:\{236411FF-[0-9A-Fa-f\-]+\}))'",
+                content,
+            )
+            if matches:
+                guid = matches[-1]
+                log(f"[+] Detected active DirectInput8 GUID from game.log.txt: {guid}", quiet)
+                return f"di8.'{guid}'"
+        except Exception as e:
+            log(f"[-] Warning: Failed reading game.log.txt: {e}", quiet)
+
+    # 2. Try reading global_controls.sii
+    global_ctrl = doc_dir / "global_controls.sii"
+    if global_ctrl.is_file():
+        try:
+            content = global_ctrl.read_text(encoding="utf-8", errors="ignore")
+            matches = re.findall(
+                r"di8\.'(\{[0-9A-Fa-f\-]+\}\|(?:\{236411FF-[0-9A-Fa-f\-]+\}))'",
+                content,
+            )
+            if matches:
+                guid = matches[-1]
+                log(f"[+] Detected active DirectInput8 GUID from global_controls.sii: {guid}", quiet)
+                return f"di8.'{guid}'"
+        except Exception as e:
+            log(f"[-] Warning: Failed reading global_controls.sii: {e}", quiet)
+
+    log(f"[*] Falling back to default DirectInput8 GUID: {FALLBACK_DEVICE_JOY_STR}", quiet)
+    return FALLBACK_DEVICE_JOY_STR
+
+
+def clean_global_controls(doc_dir: Path, quiet: bool = False):
+    """
+    Removes Ryunix XR1 from ui_blacklisted in global_controls.sii to prevent ETS2
+    from ignoring or blocking the controller in the interface.
+    """
+    global_path = doc_dir / "global_controls.sii"
+    if not global_path.is_file():
+        return
+
+    try:
+        content = global_path.read_text(encoding="utf-8", errors="ignore")
+        lines = content.splitlines()
+        new_lines = []
+        updated = False
+
+        for line in lines:
+            if "ui_blacklisted:" in line:
+                new_lines.append(" ui_blacklisted: 0")
+                if line.strip() != "ui_blacklisted: 0":
+                    updated = True
+            elif "ui_blacklisted[" in line and "236411FF" in line:
+                updated = True
+                continue  # drop the blacklisted device entry
+            else:
+                new_lines.append(line)
+
+        if updated:
+            global_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+            log("[+] Un-blacklisted Ryunix XR1 in global_controls.sii", quiet)
+    except Exception as e:
+        log(f"[-] Warning: Failed to sanitize global_controls.sii: {e}", quiet)
 
 
 def load_preset(preset_arg: str, root_dir: Path) -> dict:
@@ -78,12 +160,7 @@ def load_preset(preset_arg: str, root_dir: Path) -> dict:
     return {"ffb": DEFAULT_FFB, "buttons": DEFAULT_BINDINGS, "name": "Fallback"}
 
 
-def log(msg: str, quiet: bool = False):
-    if not quiet:
-        print(msg, file=sys.stderr)
-
-
-def patch_controls_sii(controls_path: Path, preset: dict, quiet: bool = False) -> bool:
+def patch_controls_sii(controls_path: Path, preset: dict, active_device_joy: str, quiet: bool = False) -> bool:
     preset_name = preset.get("name", "Custom")
     log(f"[*] Applying preset [{preset_name}] to: {controls_path.parent.name}/controls.sii", quiet)
 
@@ -102,9 +179,9 @@ def patch_controls_sii(controls_path: Path, preset: dict, quiet: bool = False) -
     button_bindings = preset.get("buttons", {})
 
     for i, line in enumerate(lines):
-        # 1. Bind device joy to DirectInput8 GUID
+        # 1. Bind device joy to the active DirectInput8 GUID
         if 'device joy `' in line and 'config_lines[2]' in line:
-            new_line = f' config_lines[2]: "device joy `{DEVICE_JOY_STR}`"'
+            new_line = f' config_lines[2]: "device joy `{active_device_joy}`"'
             if lines[i] != new_line:
                 lines[i] = new_line
                 updated = True
@@ -158,6 +235,12 @@ def scan_and_configure_ets2(doc_dir: Path, preset: dict, quiet: bool = False):
         log(f"[-] ETS2 Documents directory not found at: {doc_dir}", quiet)
         return []
 
+    # Clean blacklist in global_controls.sii
+    clean_global_controls(doc_dir, quiet=quiet)
+
+    # Dynamically detect active DirectInput8 GUID
+    active_device_joy = detect_active_di8_guid(doc_dir, quiet=quiet)
+
     profile_dirs = list(doc_dir.glob("profiles/*")) + list(doc_dir.glob("steam_profiles/*"))
     if not profile_dirs:
         log(f"[-] No ETS2 profiles found in: {doc_dir}", quiet)
@@ -167,7 +250,7 @@ def scan_and_configure_ets2(doc_dir: Path, preset: dict, quiet: bool = False):
     for p in profile_dirs:
         ctrl = p / "controls.sii"
         if ctrl.is_file():
-            if patch_controls_sii(ctrl, preset, quiet):
+            if patch_controls_sii(ctrl, preset, active_device_joy, quiet):
                 configured.append(p.name)
 
     return configured

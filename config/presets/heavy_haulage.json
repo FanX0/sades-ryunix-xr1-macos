@@ -4,22 +4,28 @@
   "name": "ETS2 Realistic Heavy Haulage",
   "author": "FanX",
   "game": "Euro Truck Simulator 2",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Heavy steering resistance, authentic low-speed centering, and high engine rumble for 50t+ specialized transport.",
   "tags": ["ETS2", "Simulation", "HeavyHaul", "H-Shifter"],
+  "easy_settings": {
+    "strength": 85,
+    "centering": 75,
+    "weight": 90,
+    "vibration": 65
+  },
   "ffb": {
     "c_ff_enabled": 1.0,
-    "c_ff_gain": 6.5,
-    "c_ff_hi_spd": 1.4,
-    "c_ff_lo_spd": 1.6,
-    "c_ff_fricton": 0.75,
-    "c_ff_engine": 0.45,
+    "c_ff_gain": 8.8,
+    "c_ff_hi_spd": 1.6,
+    "c_ff_lo_spd": 0.95,
+    "c_ff_fricton": 0.90,
+    "c_ff_engine": 0.40,
     "c_ff_surface": 0.35,
-    "c_ff_bumps": 0.9,
+    "c_ff_bumps": 0.90,
     "c_ff_collis": 1.0,
-    "c_ff_gearbox": 0.5,
-    "c_ff_undrstr": 0.65,
-    "c_ff_assist": 0.3
+    "c_ff_gearbox": 0.45,
+    "c_ff_undrstr": 0.85,
+    "c_ff_assist": 0.35
   },
   "buttons": {
     "parkingbrake": "keyboard.space?0 | joy.b15?0",
