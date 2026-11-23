@@ -284,6 +284,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .xr1-dpad:hover {
+    border-color: #2ed573;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.8), 0 0 12px rgba(46, 213, 115, 0.4);
   }
 
   .dpad-cross-h {
@@ -292,6 +298,7 @@
     height: 18px;
     background: #232536;
     border-radius: 4px;
+    transition: background 0.1s ease;
   }
   .dpad-cross-v {
     position: absolute;
@@ -299,25 +306,31 @@
     height: 52px;
     background: #232536;
     border-radius: 4px;
+    transition: background 0.1s ease;
   }
 
   .dpad-arrow {
     position: absolute;
-    font-size: 10px;
+    font-size: 11px;
     color: #646b82;
     font-weight: 900;
     z-index: 2;
     transition: all 0.08s ease;
     user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
   }
   .dpad-arrow.up    { top: 2px; }
   .dpad-arrow.down  { bottom: 2px; }
-  .dpad-arrow.left  { left: 4px; }
-  .dpad-arrow.right { right: 4px; }
+  .dpad-arrow.left  { left: 3px; }
+  .dpad-arrow.right { right: 3px; }
   .dpad-arrow.active {
-    color: #fff !important;
-    text-shadow: 0 0 8px #a29bfe;
-    transform: scale(1.3);
+    color: #2ed573 !important;
+    text-shadow: 0 0 10px #2ed573, 0 0 20px rgba(46, 213, 115, 0.9) !important;
+    transform: scale(1.4);
+    filter: drop-shadow(0 0 6px #2ed573);
   }
 
   /* 3 Horizontal Buttons Under D-Pad & Action Buttons */
@@ -1523,15 +1536,15 @@
 
                 <!-- Left Spoke: D-Pad & 3 Buttons Below (L1/LB, L2/LT, L3) -->
                 <div class="spoke-wing">
-                  <div class="xr1-dpad">
-                    <div class="dpad-cross-h"></div>
-                    <div class="dpad-cross-v"></div>
-                    <div class="dpad-arrow up" id="dpad-up">▲</div>
-                    <div class="dpad-arrow down" id="dpad-down">▼</div>
-                    <div class="dpad-arrow left" id="dpad-left">◀</div>
-                    <div class="dpad-arrow right" id="dpad-right">▶</div>
+                  <div class="xr1-dpad" id="wheel-dpad" onclick="onDpadClick(event)" title="D-Pad (Click to connect WebHID or test arrows)">
+                    <div class="dpad-cross-h" id="dpad-cross-h"></div>
+                    <div class="dpad-cross-v" id="dpad-cross-v"></div>
+                    <div class="dpad-arrow up" id="dpad-up" onclick="testDpadDirection('up', event)">▲</div>
+                    <div class="dpad-arrow down" id="dpad-down" onclick="testDpadDirection('down', event)">▼</div>
+                    <div class="dpad-arrow left" id="dpad-left" onclick="testDpadDirection('left', event)">◀</div>
+                    <div class="dpad-arrow right" id="dpad-right" onclick="testDpadDirection('right', event)">▶</div>
                   </div>
-                  <div id="dpad-status-badge" style="font-size: 8px; color: var(--dim); margin-top: 2px; font-weight: 700; text-align: center;">D-Pad: Center</div>
+                  <div id="dpad-status-badge" style="font-size: 8px; color: var(--dim); margin-top: 2px; font-weight: 700; text-align: center; cursor: pointer;" onclick="onDpadClick(event)">D-Pad: Center</div>
                   <!-- 3 Buttons Left -->
                   <div class="trio-buttons">
                     <div class="trio-btn" id="btn-l1" title="L1 / LB (Button 4)">
@@ -2528,6 +2541,64 @@ let hidDevice = null;
 let hidActuatorsEnabled = false;
 let hidRumbleInterval = null;
 
+// Direct WebHID Physical D-Pad State (Report 1 Byte 14: 1=Up..8=Up-Left, 0=Center)
+const webhidDpad = {
+  up: false,
+  down: false,
+  left: false,
+  right: false,
+  raw: 0,
+  source: ''
+};
+
+function handleWebHIDInputReport(event) {
+  if (!event || !event.data) return;
+  // Ryunix XR1 sends Report ID 1 (20 bytes Joystick data)
+  // Byte 14: UsagePage 1, Usage 57 (Hat switch), Min 1, Max 8
+  const isReport1 = event.reportId === 1 && event.data.byteLength >= 15;
+  const isReport0 = event.reportId === 0 && event.data.byteLength >= 20;
+
+  if (isReport1 || isReport0) {
+    const rawHat = event.data.getUint8(14);
+    webhidDpad.raw = rawHat;
+
+    // Direct USB Hat switch decoding:
+    // 0: Centered / neutral
+    // 1: Up (0°)
+    // 2: Up-Right (45°)
+    // 3: Right (90°)
+    // 4: Down-Right (135°)
+    // 5: Down (180°)
+    // 6: Down-Left (225°)
+    // 7: Left (270°)
+    // 8: Up-Left (315°)
+    webhidDpad.up = (rawHat === 1 || rawHat === 2 || rawHat === 8);
+    webhidDpad.right = (rawHat === 2 || rawHat === 3 || rawHat === 4);
+    webhidDpad.down = (rawHat === 4 || rawHat === 5 || rawHat === 6);
+    webhidDpad.left = (rawHat === 6 || rawHat === 7 || rawHat === 8);
+    webhidDpad.source = (rawHat >= 1 && rawHat <= 8) ? `WebHID Hat: ${rawHat}` : '';
+  }
+}
+
+function onDpadClick(e) {
+  if (e) e.stopPropagation();
+  if (!hidDevice || !hidDevice.opened) {
+    connectWebHID();
+  } else {
+    showToast(`🟢 WebHID Active - Raw D-Pad Hat: ${webhidDpad.raw || 0}`);
+  }
+}
+
+function testDpadDirection(dir, e) {
+  if (e) e.stopPropagation();
+  const el = document.getElementById(`dpad-${dir}`);
+  if (el) {
+    el.classList.add('active');
+    setTimeout(() => el.classList.remove('active'), 400);
+  }
+  showToast(`D-Pad Arrow Test: ${dir.toUpperCase()}`);
+}
+
 async function initWebHID() {
   if (!navigator.hid) {
     console.info('WebHID API not supported in this browser (use Chrome/Edge/Brave).');
@@ -2553,6 +2624,12 @@ async function initWebHID() {
     if (hidDevice && event.device === hidDevice) {
       hidDevice = null;
       hidActuatorsEnabled = false;
+      webhidDpad.up = false;
+      webhidDpad.down = false;
+      webhidDpad.left = false;
+      webhidDpad.right = false;
+      webhidDpad.raw = 0;
+      webhidDpad.source = '';
       updateWebHIDBadge(false);
       showToast('⚠️ Ryunix XR1 USB disconnected.', 'error');
     }
@@ -2584,6 +2661,13 @@ async function attachHIDDevice(dev, quiet = false) {
     if (!hidDevice.opened) {
       await hidDevice.open();
     }
+    // Listen for direct hardware input reports (Report 1 Byte 14 = Hat switch)
+    dev.oninputreport = handleWebHIDInputReport;
+    try {
+      dev.removeEventListener('inputreport', handleWebHIDInputReport);
+      dev.addEventListener('inputreport', handleWebHIDInputReport);
+    } catch(e) {}
+
     // Report 12 (0x0C): Device Control (Byte 0 = 1: Enable Actuators)
     try {
       await hidDevice.sendReport(12, new Uint8Array([1]));
@@ -3552,49 +3636,60 @@ function updateLoop() {
   let dRight = false;
   let dpadSource = 'Centered';
 
-  // Source A: Synthesized Gamepad API buttons (Buttons 24-27 or Standard 12-15)
-  if (buttons.length >= 28) {
-    if (buttons[24]?.pressed) dUp = true;
-    if (buttons[25]?.pressed) dDown = true;
-    if (buttons[26]?.pressed) dLeft = true;
-    if (buttons[27]?.pressed) dRight = true;
-    if (dUp || dDown || dLeft || dRight) dpadSource = 'Buttons 24-27';
-  } else if (activeGamepad && activeGamepad.mapping === 'standard' && buttons.length >= 16) {
-    if (buttons[12]?.pressed) dUp = true;
-    if (buttons[13]?.pressed) dDown = true;
-    if (buttons[14]?.pressed) dLeft = true;
-    if (buttons[15]?.pressed) dRight = true;
-    if (dUp || dDown || dLeft || dRight) dpadSource = 'Standard Buttons 12-15';
+  // Priority 1: Direct WebHID Input Report (100% hardware accuracy directly from USB Report 1 Byte 14)
+  if (webhidDpad.up || webhidDpad.down || webhidDpad.left || webhidDpad.right) {
+    dUp = webhidDpad.up;
+    dDown = webhidDpad.down;
+    dLeft = webhidDpad.left;
+    dRight = webhidDpad.right;
+    dpadSource = webhidDpad.source || 'WebHID Direct';
   }
 
-  // Source B: Dedicated Hat Switch Axis (macOS Chromium maps Usage 57 to Axis 9: 57 - 48 = 9)
+  // Priority 2: Dedicated Hat Switch Axis (macOS Chromium maps Usage 57 to Axis 9 or 8/7/4)
   // Check candidate axes in order, STRICTLY excluding any pedal axis (Throttle, Brake, Clutch, Steer)
-  if (!dUp && !dDown && !dLeft && !dRight) {
+  if (!dUp && !dDown && !dLeft && !dRight && axes && axes.length > 0) {
     const pedalAxes = new Set([0, config.throttleAxis, config.brakeAxis, config.clutchAxis]);
-    const candidateAxes = [9, 8, 7, 4, 3, 10].filter(i => !pedalAxes.has(i) && i < axes.length);
+    const candidateAxes = [9, 8, 7, 4, 3, 10, 5, 6].filter(i => !pedalAxes.has(i) && i < axes.length);
 
     for (const ax of candidateAxes) {
       const val = axes[ax];
+      if (val === undefined || val === null || isNaN(val)) continue;
+
       // When pressed, a standard 8-way hat switch sits strictly within [-1.02, 1.02]
       // When centered/released, it sits out-of-range (e.g. -1.2857 or 1.2857 or 3.28)
-      if (val >= -1.02 && val <= 1.02 && Math.abs(val) > 0.05) {
-        const tol = 0.065;
-        // Up (-1.000, -0.714, 1.000)
-        if (Math.abs(val - (-1.000)) < tol || Math.abs(val - (-0.714)) < tol || Math.abs(val - 1.000) < tol) {
-          dUp = true;
-        }
-        // Right (-0.714, -0.429, -0.143)
-        if (Math.abs(val - (-0.714)) < tol || Math.abs(val - (-0.429)) < tol || Math.abs(val - (-0.143)) < tol) {
-          dRight = true;
-        }
-        // Down (-0.143, 0.143, 0.429)
-        if (Math.abs(val - (-0.143)) < tol || Math.abs(val - 0.143) < tol || Math.abs(val - 0.429) < tol) {
-          dDown = true;
-        }
-        // Left (0.429, 0.714, 1.000)
-        if (Math.abs(val - 0.429) < tol || Math.abs(val - 0.714) < tol || Math.abs(val - 1.000) < tol) {
-          dLeft = true;
-        }
+      if (val >= -1.02 && val <= 1.02) {
+        // Tolerances for 7-interval and 8-interval schemes:
+        const tol = 0.085;
+
+        // Scheme A: 7-interval (LogicalMin 1, LogicalMax 8 -> step 2/7 = 0.2857):
+        // Up: -1.000, Up-Right: -0.714, Right: -0.429, Down-Right: -0.143,
+        // Down: +0.143, Down-Left: +0.429, Left: +0.714, Up-Left: +1.000
+        const isUp7 = Math.abs(val - (-1.000)) < tol || Math.abs(val - 1.000) < tol;
+        const isUpRight7 = Math.abs(val - (-0.714)) < tol;
+        const isRight7 = Math.abs(val - (-0.429)) < tol;
+        const isDownRight7 = Math.abs(val - (-0.143)) < tol;
+        const isDown7 = Math.abs(val - 0.143) < tol;
+        const isDownLeft7 = Math.abs(val - 0.429) < tol;
+        const isLeft7 = Math.abs(val - 0.714) < tol;
+
+        // Scheme B: 8-interval (LogicalMin 0, LogicalMax 8 -> step 0.250):
+        // Up: -0.750, Up-Right: -0.500, Right: -0.250, Down-Right: 0.000,
+        // Down: +0.250, Down-Left: +0.500, Left: +0.750, Up-Left: +1.000
+        const isUp8 = Math.abs(val - (-0.750)) < tol;
+        const isUpRight8 = Math.abs(val - (-0.500)) < tol;
+        const isRight8 = Math.abs(val - (-0.250)) < tol;
+        const isDownRight8 = Math.abs(val - 0.000) < 0.045 && Math.abs(val) > 0.001;
+        const isDown8 = Math.abs(val - 0.250) < tol;
+        const isDownLeft8 = Math.abs(val - 0.500) < tol;
+        const isLeft8 = Math.abs(val - 0.750) < tol;
+
+        if (isUp7 || isUp8) dUp = true;
+        if (isDown7 || isDown8) dDown = true;
+        if (isLeft7 || isLeft8) dLeft = true;
+        if (isRight7 || isRight8) dRight = true;
+        if (isUpRight7 || isUpRight8) { dUp = true; dRight = true; }
+        if (isDownRight7 || isDownRight8) { dDown = true; dRight = true; }
+        if (isDownLeft7 || isDownLeft8) { dDown = true; dLeft = true; }
 
         if (dUp || dDown || dLeft || dRight) {
           dpadSource = `Axis ${ax} (${val.toFixed(2)})`;
@@ -3604,8 +3699,44 @@ function updateLoop() {
     }
   }
 
-  // Source C: 2-Axis POV Pair (POV X and POV Y)
-  if (!dUp && !dDown && !dLeft && !dRight) {
+  // Priority 3: Synthesized Gamepad API buttons
+  if (!dUp && !dDown && !dLeft && !dRight && buttons) {
+    // Layout 3A: DirectInput / macOS SDL Order (Buttons 24=Left, 25=Right, 26=Up, 27=Down)
+    if (buttons.length >= 28) {
+      if (buttons[26]?.pressed) dUp = true;
+      if (buttons[27]?.pressed) dDown = true;
+      if (buttons[24]?.pressed) dLeft = true;
+      if (buttons[25]?.pressed) dRight = true;
+      if (dUp || dDown || dLeft || dRight) {
+        dpadSource = 'Buttons 24-27 (macOS SDL)';
+      }
+    }
+    // Layout 3B: Windows DirectInput Order (Buttons 24=Up, 25=Down, 26=Left, 27=Right)
+    if (!dUp && !dDown && !dLeft && !dRight && buttons.length >= 28) {
+      if (buttons[24]?.pressed) dUp = true;
+      if (buttons[25]?.pressed) dDown = true;
+      if (buttons[26]?.pressed) dLeft = true;
+      if (buttons[27]?.pressed) dRight = true;
+      if (dUp || dDown || dLeft || dRight) {
+        dpadSource = 'Buttons 24-27 (Win DInput)';
+      }
+    }
+    // Layout 3C: Standard Gamepad D-pad (Buttons 12=Up, 13=Down, 14=Left, 15=Right)
+    if (!dUp && !dDown && !dLeft && !dRight && buttons.length >= 16) {
+      if (activeGamepad && activeGamepad.mapping === 'standard') {
+        if (buttons[12]?.pressed) dUp = true;
+        if (buttons[13]?.pressed) dDown = true;
+        if (buttons[14]?.pressed) dLeft = true;
+        if (buttons[15]?.pressed) dRight = true;
+        if (dUp || dDown || dLeft || dRight) {
+          dpadSource = 'Standard Buttons 12-15';
+        }
+      }
+    }
+  }
+
+  // Priority 4: 2-Axis POV Pair (POV X and POV Y)
+  if (!dUp && !dDown && !dLeft && !dRight && axes) {
     const pedalAxes = new Set([0, config.throttleAxis, config.brakeAxis, config.clutchAxis]);
     for (const [xAx, yAx] of [[9, 10], [7, 8]]) {
       if (xAx < axes.length && yAx < axes.length && !pedalAxes.has(xAx) && !pedalAxes.has(yAx)) {
@@ -3630,15 +3761,29 @@ function updateLoop() {
   setBtnClass('dpad-left', dLeft);
   setBtnClass('dpad-right', dRight);
 
+  // Dynamic D-Pad outer ring glow on active direction
+  const wheelDpadEl = document.getElementById('wheel-dpad');
+  if (wheelDpadEl) {
+    if (dUp || dDown || dLeft || dRight) {
+      wheelDpadEl.style.borderColor = '#2ed573';
+      wheelDpadEl.style.boxShadow = 'inset 0 2px 6px rgba(0,0,0,0.8), 0 0 14px rgba(46, 213, 115, 0.6)';
+    } else {
+      wheelDpadEl.style.borderColor = '';
+      wheelDpadEl.style.boxShadow = '';
+    }
+  }
+
   const dpadStatusEl = document.getElementById('dpad-status-badge');
   if (dpadStatusEl) {
     if (dUp || dDown || dLeft || dRight) {
       const dirText = [dUp ? '▲' : '', dDown ? '▼' : '', dLeft ? '◀' : '', dRight ? '▶' : ''].filter(Boolean).join(' ');
       dpadStatusEl.textContent = `${dirText} (${dpadSource})`;
-      dpadStatusEl.style.color = '#55efc4';
+      dpadStatusEl.style.color = '#2ed573';
+      dpadStatusEl.style.fontWeight = '800';
     } else {
-      dpadStatusEl.textContent = 'D-Pad: Center';
+      dpadStatusEl.textContent = (hidDevice && hidDevice.opened) ? 'D-Pad: Center (WebHID)' : 'D-Pad: Center';
       dpadStatusEl.style.color = 'var(--dim)';
+      dpadStatusEl.style.fontWeight = '700';
     }
   }
 
